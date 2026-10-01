@@ -1,6 +1,6 @@
 import { fileToScript } from './parsers.js';
 import { Voice, locate, mintToken, norm } from './voice.js';
-import { pull, push, merge, forRemote } from './sync.js';
+import { pull, push, merge, forRemote, pullJson, pushJson } from './sync.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -219,6 +219,7 @@ async function restoreBackup(file) {
 let editing = null;
 
 function openEditor(s) {
+  closeSettings();
   editing = s;
   $('#ed-title').value = s ? s.title : '';
   $('#ed-text').value = s ? s.text : '';
@@ -264,6 +265,7 @@ let offset = 0, maxOffset = 0, lhPx = 0, markerY = 0, paraTops = [];
 let playing = false, counting = null, raf = 0, lastTs = 0, dragging = false, tween = null, lastHud = '';
 
 function openPrompter(s) {
+  closeSettings();
   cur = s;
   cur.used = Date.now();
   words = countWords(s.text);
@@ -612,7 +614,16 @@ $('#p-prev').onclick = () => jumpPara(-1);
 $('#p-next').onclick = () => jumpPara(1);
 $('#p-slower').onclick = () => nudge(-1);
 $('#p-faster').onclick = () => nudge(1);
-$('#p-settings').onclick = () => { stop(); $('#settings').classList.add('on'); };
+$('#p-settings').onclick = () => { stop(); openSettings(false); };
+$('#btn-settings').onclick = () => openSettings(true);
+// z listy skryptów: bez tempa (należy do konkretnego skryptu), reszta ustawień wspólna
+function openSettings(fromLibrary) {
+  const panel = $('#settings');
+  panel.classList.toggle('lib', fromLibrary);
+  syncSettingsUI();
+  panel.scrollTop = 0;
+  panel.classList.add('on');
+}
 $('#s-close').onclick = closeSettings;
 function closeSettings() { $('#settings').classList.remove('on'); }
 
@@ -654,8 +665,18 @@ window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer
 
 // ---------- śledzenie głosu ----------
 
-const KEY = 'tp.elkey'; // klucz ElevenLabs: tylko na tym urządzeniu, poza kopią zapasową
+// klucz ElevenLabs: poza kopią zapasową; przy włączonej synchronizacji idzie do prywatnego repo (klucze.json)
+const KEY = 'tp.elkey', KEY_AT = 'tp.elkeyAt';
 const elKey = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
+const elKeyAt = () => { try { return +(localStorage.getItem(KEY_AT) || 0); } catch { return 0; } };
+function setElKey(key, at = Date.now()) {
+  try {
+    if (key) localStorage.setItem(KEY, key); else localStorage.removeItem(KEY);
+    localStorage.setItem(KEY_AT, String(at));
+  } catch { /* pamięć niedostępna */ }
+}
+// klucz zapisany przed wprowadzeniem synchronizacji dostaje znacznik czasu, żeby trafił do repo
+if (elKey() && !elKeyAt()) setElKey(elKey());
 let wordNorms = [], wordY = [];       // słowa skryptu i ich pozycja (w jednostkach offsetu)
 let voiceCur = 0, voiceTarget = 0, voiceTs = 0, vCur = 0;
 
@@ -747,12 +768,17 @@ function voiceKeyStatus(msg) {
 $('#el-save').onclick = async () => {
   const key = $('#el-key').value.trim();
   try {
-    if (!key) { localStorage.removeItem(KEY); voiceKeyStatus(); return; }
+    if (!key) {
+      if (elKey() && confirm('Usunąć klucz ElevenLabs? Przy włączonej synchronizacji zniknie też z innych urządzeń.')) { setElKey(''); scheduleSync(); }
+      voiceKeyStatus();
+      return;
+    }
     voiceKeyStatus('sprawdzam…');
     await mintToken(key);
-    localStorage.setItem(KEY, key);
+    setElKey(key);
     $('#el-key').value = '';
     voiceKeyStatus('działa ✓');
+    scheduleSync();
   } catch (err) {
     voiceKeyStatus(err.message);
   }
@@ -875,6 +901,24 @@ function applyMerged(merged) {
   return changed;
 }
 
+// klucz ElevenLabs: wygrywa nowsza zmiana (także usunięcie)
+async function syncKey(repo, token) {
+  for (let attempt = 0; ; attempt++) {
+    const { sha, data } = await pullJson(repo, token, 'klucze.json');
+    const remoteAt = data?.elevenlabsAt || 0, localAt = elKeyAt();
+    if (remoteAt > localAt) {
+      setElKey(data.elevenlabsKey || '', remoteAt);
+      if ($('#el-status')) voiceKeyStatus();
+      return;
+    }
+    if (localAt <= remoteAt) return;
+    try {
+      await pushJson(repo, token, 'klucze.json', { elevenlabsKey: elKey(), elevenlabsAt: localAt }, sha, 'Prompter: klucz ElevenLabs');
+      return;
+    } catch (e) { if (!(e.conflict && attempt < 3)) throw e; }
+  }
+}
+
 async function syncNow() {
   const cfg = syncCfg();
   if (!cfg?.token) { syncStatus('off'); return; }
@@ -891,6 +935,7 @@ async function syncNow() {
         try { await push(cfg.repo || SYNC_REPO, cfg.token, out, sha); }
         catch (e) { if (e.conflict && attempt < 3) continue; throw e; }
       }
+      await syncKey(cfg.repo || SYNC_REPO, cfg.token);
       syncedHash = JSON.stringify(forRemote(scripts));
       store.set('tp.scripts', scripts);
       syncAt = Date.now();

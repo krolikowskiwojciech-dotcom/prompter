@@ -39,27 +39,33 @@ async function gh(token, path, opts = {}) {
 }
 
 export async function pull(repo, token) {
-  const r = await gh(token, `/repos/${repo}/contents/${FILE}`);
+  const { sha, data } = await pullJson(repo, token, FILE);
+  return { sha, list: Array.isArray(data?.scripts) ? data.scripts : [] };
+}
+
+export function push(repo, token, list, sha) {
+  const live = list.filter((s) => !s.deleted).length;
+  return pushJson(repo, token, FILE, { app: 'prompter', version: 1, scripts: list }, sha, `Prompter: ${live} skryptów`);
+}
+
+// dowolny plik JSON w repozytorium danych → { sha, data } (data = null, gdy pliku jeszcze nie ma)
+export async function pullJson(repo, token, file) {
+  const r = await gh(token, `/repos/${repo}/contents/${file}`);
   if (r.status === 404) {
     // brak pliku (pierwsza synchronizacja) czy brak dostępu do repozytorium?
     const repoRes = await gh(token, `/repos/${repo}`);
     if (!repoRes.ok) throw new Error(`Brak dostępu do repozytorium ${repo} — sprawdź nazwę i uprawnienia tokenu`);
-    return { sha: null, list: [] };
+    return { sha: null, data: null };
   }
   if (!r.ok) throw new Error(`GitHub: błąd ${r.status} przy pobieraniu`);
   const j = await r.json();
-  const data = JSON.parse(dec(j.content || '') || '{}');
-  return { sha: j.sha, list: Array.isArray(data.scripts) ? data.scripts : [] };
+  return { sha: j.sha, data: JSON.parse(dec(j.content || '') || 'null') };
 }
 
-export async function push(repo, token, list, sha) {
-  const live = list.filter((s) => !s.deleted).length;
-  const body = {
-    message: `Prompter: ${live} skryptów`,
-    content: enc(JSON.stringify({ app: 'prompter', version: 1, scripts: list }, null, 1) + '\n'),
-  };
+export async function pushJson(repo, token, file, data, sha, message) {
+  const body = { message, content: enc(JSON.stringify(data, null, 1) + '\n') };
   if (sha) body.sha = sha;
-  const r = await gh(token, `/repos/${repo}/contents/${FILE}`, { method: 'PUT', body: JSON.stringify(body) });
+  const r = await gh(token, `/repos/${repo}/contents/${file}`, { method: 'PUT', body: JSON.stringify(body) });
   if (r.status === 409 || r.status === 422) { const e = new Error('konflikt'); e.conflict = true; throw e; }
   if (r.status === 403 || r.status === 404) throw new Error('Token nie ma prawa zapisu (Contents: Read and write) do tego repozytorium');
   if (!r.ok) throw new Error(`GitHub: błąd ${r.status} przy zapisie`);

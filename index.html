@@ -146,8 +146,11 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .spacer { width: 18px; }
 
 /* ---------- Ustawienia ---------- */
-#settings { position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); background: rgba(20,20,26,.97); z-index: 10; transform: translateX(105%); transition: transform .28s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(var(--safe-t) + 16px) 22px calc(var(--safe-b) + 30px); border-left: 1px solid var(--line); }
+#settings { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); background: rgba(20,20,26,.97); z-index: 10; transform: translateX(105%); transition: transform .28s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(var(--safe-t) + 16px) 22px calc(var(--safe-b) + 30px); border-left: 1px solid var(--line); }
 #settings.on { transform: none; }
+#settings.lib #tempo-row { display: none; }
+#settings .lib-note { display: none; color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+#settings.lib .lib-note { display: block; }
 .s-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .s-head h2 { margin: 0; font-size: 24px; font-weight: 800; }
 .grp { margin-top: 22px; }
@@ -212,6 +215,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
   <div class="lib-head">
     <h1>Skrypty</h1>
     <button class="btn" id="btn-import"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importuj</button>
+    <button class="btn icon" id="btn-settings" aria-label="Ustawienia"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
     <button class="btn primary" id="btn-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nowy</button>
   </div>
   <div class="search">
@@ -222,7 +226,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
   <button id="btn-sync"><span id="sync-state" class="sync-state off"><i></i><span>Synchronizacja wyłączona</span></span></button>
   <div id="syncbox" hidden>
     <h3>Synchronizacja między urządzeniami</h3>
-    <p>Skrypty i ich tempo zapisują się w Twoim prywatnym repozytorium GitHub, więc to, co zaimportujesz na telefonie, pojawi się na iPadzie. Na każdym urządzeniu wpisz ten sam token. Ustawienia wyglądu i klucz ElevenLabs zostają osobno na każdym urządzeniu.</p>
+    <p>Skrypty i ich tempo zapisują się w Twoim prywatnym repozytorium GitHub, więc to, co zaimportujesz na telefonie, pojawi się na iPadzie. Na każdym urządzeniu wpisz ten sam token. Synchronizuje się też klucz ElevenLabs. Ustawienia wyglądu zostają osobno na każdym urządzeniu.</p>
     <label>Repozytorium<input id="sync-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <label>Token GitHub<input id="sync-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <div class="sync-btns"><button class="btn primary" id="sync-save">Zapisz i synchronizuj</button><button class="btn ghost" id="sync-off">Wyłącz</button></div>
@@ -289,11 +293,14 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     </div>
   </div>
 
+</section>
+
   <aside id="settings">
     <div class="s-head"><h2>Ustawienia</h2><button class="pill" id="s-close">Gotowe</button></div>
+    <p class="lib-note">Tempo ustawiasz w skrypcie — zapamiętuje się osobno dla każdego z nich.</p>
 
     <div class="grp"><h4>Przewijanie</h4>
-      <div class="row">
+      <div class="row" id="tempo-row">
         <div class="lbl"><span>Tryb</span></div>
         <div class="seg" data-key="mode">
           <button data-v="speed">Stała prędkość</button><button data-v="wpm">Słowa / min</button><button data-v="time">Czas</button>
@@ -319,7 +326,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
       <div class="row">
         <div class="lbl"><span>Klucz API ElevenLabs</span><span id="el-status"></span></div>
         <div class="keyrow"><input id="el-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="pill" id="el-save">Zapisz</button></div>
-        <div class="est">Klucz zostaje tylko na tym urządzeniu i nie trafia do kopii zapasowej. Koszt ok. 0,39 USD za godzinę, liczony tylko w trakcie czytania. Mikrofon działa tylko pod adresem https (albo na Macu).</div>
+        <div class="est">Przy włączonej synchronizacji klucz trafia do Twojego prywatnego repozytorium i sam pojawia się na pozostałych urządzeniach. Nie trafia do kopii zapasowej. Koszt ok. 0,39 USD za godzinę, liczony tylko w trakcie czytania. Mikrofon działa tylko pod adresem https (albo na Macu).</div>
       </div>
       <div class="row"><label>Pokaż rozpoznany tekst <span class="tog"><input type="checkbox" data-key="voiceDebug"><i></i></span></label></div>
     </div>
@@ -376,7 +383,6 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
       <div class="row"><label>Pasek postępu <span class="tog"><input type="checkbox" data-key="progress"><i></i></span></label></div>
     </div>
   </aside>
-</section>
 
 <div id="toast"></div>
 <script type="module" src="app.js"></script>
