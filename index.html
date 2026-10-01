@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prompter">
+<meta name="theme-color" content="#000000">
+<title>Prompter</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<style>
+@font-face { font-family: 'Montserrat'; src: url('fonts/Montserrat-Variable.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+
+:root {
+  --bg: #0d0d10;
+  --panel: #18181d;
+  --card: #1f1f26;
+  --line: #2c2c35;
+  --text: #f6f6f6;
+  --muted: #9a9aa6;
+  --accent: #a85f9c;
+  --accent-2: #c77dba;
+  --danger: #e5484d;
+  --radius: 16px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  /* iPhone poziomo: wycięcie ekranu z boku — tekst i wskaźnik muszą je omijać */
+  --safe-x: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+}
+/* manipulation = bez powiększania strony podwójnym stuknięciem (szybkie klikanie +/−) */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); }
+body { font: 17px/1.4 Montserrat, -apple-system, system-ui, sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-text-size-adjust: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+.view { position: fixed; inset: 0; display: none; }
+.view.on { display: flex; }
+svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- Biblioteka ---------- */
+#library { flex-direction: column; overflow: auto; padding: calc(var(--safe-t) + 28px) 32px calc(var(--safe-b) + 40px); -webkit-overflow-scrolling: touch; }
+.lib-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.lib-head h1 { font-size: 40px; font-weight: 800; margin: 0; letter-spacing: -0.02em; flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border-radius: 999px; background: var(--card); font-weight: 600; font-size: 16px; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.ghost { background: transparent; border: 1px solid var(--line); }
+.btn.icon { width: 46px; padding: 0; justify-content: center; }
+.search { margin: 22px 0 8px; position: relative; }
+.search input { width: 100%; height: 50px; border-radius: 14px; border: 0; background: var(--card); padding: 0 16px 0 48px; font-size: 17px; outline: none; }
+.search svg { position: absolute; left: 16px; top: 13px; color: var(--muted); }
+.hint { color: var(--muted); font-size: 14px; margin: 6px 2px 18px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.card { position: relative; background: var(--card); border-radius: var(--radius); padding: 18px 18px 14px; min-height: 190px; display: flex; flex-direction: column; text-align: left; border: 1px solid transparent; }
+.card:active { border-color: var(--accent); }
+.card h3 { margin: 0 0 8px; font-size: 17px; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding-right: 64px; }
+.card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+.card .meta { margin-top: 12px; font-size: 13px; color: var(--muted); display: flex; gap: 12px; }
+.card .acts { position: absolute; top: 10px; right: 10px; display: flex; gap: 2px; }
+.card .acts button { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: var(--muted); }
+.card .acts button:active { background: var(--line); color: var(--text); }
+.card .acts svg { width: 19px; height: 19px; }
+.empty { margin: 60px auto; text-align: center; color: var(--muted); max-width: 440px; }
+.empty b { color: var(--text); display: block; font-size: 20px; margin-bottom: 8px; }
+.lib-foot { margin-top: 36px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Edytor ---------- */
+#editor { flex-direction: column; padding: calc(var(--safe-t) + 18px) 32px calc(var(--safe-b) + 18px); gap: 14px; }
+.ed-head { display: flex; gap: 10px; align-items: center; }
+.ed-head input { flex: 1; height: 50px; background: var(--card); border: 0; border-radius: 14px; padding: 0 16px; font-size: 20px; font-weight: 700; outline: none; }
+#ed-text { flex: 1; resize: none; background: var(--card); border: 0; border-radius: var(--radius); padding: 20px; font-size: 19px; line-height: 1.55; outline: none; -webkit-user-select: text; user-select: text; }
+.ed-foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 14px; gap: 16px; flex-wrap: wrap; }
+.ed-foot code { background: var(--card); padding: 1px 6px; border-radius: 6px; color: var(--text); }
+
+/* ---------- Prompter ---------- */
+#prompter { background: #000; }
+#stage { position: absolute; inset: 0; overflow: hidden; touch-action: none; background: var(--p-bg, #000); }
+#content { position: absolute; left: 0; right: 0; top: 0; will-change: transform; color: var(--p-fg, #fff);
+  padding: 0 calc(var(--p-margin, 8%) + var(--safe-x)); font-family: var(--p-font); font-size: var(--p-size, 64px); line-height: var(--p-lh, 1.35); font-weight: var(--p-weight, 600);
+  text-align: var(--p-align, left); text-transform: var(--p-case, none); padding-bottom: 100vh; }
+#content .para { margin: 0 0 0.75em; }
+#content > :first-child { margin-top: 0; }
+#content .label { font-size: 0.42em; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.55; margin: 0.6em 0 0.9em; font-weight: 700; }
+#content .hl { font-style: normal; color: var(--p-hl, #ffd60a); }
+#content .note { opacity: 0.4; font-size: 0.7em; font-weight: 500; }
+#content .pause { color: var(--accent-2); opacity: 0.85; padding: 0 0.15em; }
+#fade { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
+#marker { position: absolute; left: 0; right: 0; height: 0; pointer-events: none; }
+#marker .arrow { position: absolute; left: calc(10px + var(--safe-x)); top: -18px; width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 26px solid var(--accent-2); }
+#marker .band { position: absolute; left: 0; right: 0; top: calc(var(--p-lhpx) * -0.5); height: var(--p-lhpx); background: rgba(168, 95, 156, 0.14); border-top: 1px solid rgba(199, 125, 186, 0.35); border-bottom: 1px solid rgba(199, 125, 186, 0.35); }
+#hud { position: absolute; top: calc(var(--safe-t) + 14px); right: 22px; font: 600 22px/1 Montserrat, system-ui, sans-serif; color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums; pointer-events: none; }
+#progress { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--accent); width: 0; pointer-events: none; opacity: 0.8; }
+#countdown { position: absolute; inset: 0; display: none; place-items: center; pointer-events: none; }
+#countdown.on { display: grid; }
+#countdown span { width: 260px; height: 260px; border-radius: 50%; display: grid; place-items: center; font: 800 150px/1 Montserrat, system-ui, sans-serif; color: #fff; background: rgba(168, 95, 156, 0.85); }
+#endmsg { position: absolute; left: 0; right: 0; bottom: 18%; text-align: center; font: 700 30px Montserrat, system-ui, sans-serif; color: rgba(255,255,255,0.6); display: none; pointer-events: none; }
+#endmsg.on { display: block; }
+#zoomhint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; background: rgba(30,30,38,.9); padding: 12px 22px; border-radius: 14px; font: 700 24px Montserrat, system-ui, sans-serif; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity .2s; pointer-events: none; }
+#zoomhint.on { opacity: 1; }
+#voicebadge { position: absolute; top: calc(var(--safe-t) + 14px); left: calc(22px + var(--safe-x)); display: flex; align-items: center; gap: 8px; font: 600 16px Montserrat, system-ui, sans-serif; color: rgba(255,255,255,.55); pointer-events: none; }
+#voicebadge i { width: 10px; height: 10px; border-radius: 50%; background: #666; }
+#voicebadge.connecting i { background: #f5a524; }
+#voicebadge.listening i { background: #3ccf6e; box-shadow: 0 0 8px #3ccf6e; }
+#voicebadge.error i { background: var(--danger); }
+#heard { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; padding: 0 calc(24px + var(--safe-x)); font: 500 20px/1.3 Montserrat, system-ui, sans-serif; color: rgba(255,255,255,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.keyrow { display: flex; gap: 8px; margin-top: 10px; }
+.keyrow input { flex: 1; min-width: 0; height: 44px; background: #111116; border: 0; border-radius: 10px; padding: 0 12px; outline: none; -webkit-user-select: text; user-select: text; }
+#marginbar { left: 92%; right: auto; top: 0; bottom: 0; width: 48px; margin-left: -24px; padding: 0; display: block; z-index: 4; touch-action: none; cursor: ew-resize; }
+#marginbar .line { position: absolute; left: 23px; top: 0; bottom: 0; width: 2px; background: rgba(199, 125, 186, 0.45); }
+#marginbar .knob { position: absolute; left: 6px; top: 50%; width: 36px; height: 64px; margin-top: -32px; border-radius: 18px; background: var(--accent); box-shadow: 0 2px 12px rgba(0,0,0,.5); }
+#marginbar .knob::before, #marginbar .knob::after { content: ''; position: absolute; top: 20px; bottom: 20px; width: 2px; border-radius: 1px; background: rgba(255,255,255,.8); }
+#marginbar .knob::before { left: 13px; }
+#marginbar .knob::after { right: 13px; }
+#marginbar.drag .line { background: var(--accent-2); }
+#marginbar.drag .knob { transform: scale(1.12); }
+
+.chrome { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: 0 calc(20px + var(--safe-x)); transition: opacity .25s; z-index: 5; }
+.chrome.hidden { opacity: 0; pointer-events: none; }
+#topbar { top: 0; padding-top: calc(var(--safe-t) + 12px); padding-bottom: 28px; background: linear-gradient(rgba(0,0,0,.85), rgba(0,0,0,0)); }
+#topbar .title { flex: 1; font-weight: 700; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+#bottombar { bottom: 0; padding-bottom: calc(var(--safe-b) + 18px); padding-top: 40px; justify-content: center; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.9)); }
+.pill { height: 54px; min-width: 54px; border-radius: 999px; background: rgba(40,40,48,.92); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; font-weight: 600; }
+.pill.play { width: 84px; height: 84px; background: var(--accent); }
+.pill.play svg { width: 36px; height: 36px; fill: #fff; stroke: none; }
+.speed { display: inline-flex; align-items: center; background: rgba(40,40,48,.92); border-radius: 999px; height: 54px; }
+.speed button { width: 54px; height: 54px; display: grid; place-items: center; }
+.speed .val { min-width: 104px; text-align: center; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.speed .val small { display: block; font-size: 11px; color: var(--muted); font-weight: 500; }
+.spacer { width: 18px; }
+
+/* ---------- Ustawienia ---------- */
+#settings { position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); background: rgba(20,20,26,.97); z-index: 10; transform: translateX(105%); transition: transform .28s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(var(--safe-t) + 16px) 22px calc(var(--safe-b) + 30px); border-left: 1px solid var(--line); }
+#settings.on { transform: none; }
+.s-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.s-head h2 { margin: 0; font-size: 24px; font-weight: 800; }
+.grp { margin-top: 22px; }
+.grp > h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.row { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+.row label, .row .lbl { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 15px; gap: 10px; }
+.row .lbl span:last-child, .row label output { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; }
+input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent); height: 28px; }
+.seg { display: flex; background: #111116; border-radius: 12px; padding: 3px; margin-top: 10px; }
+.seg button { flex: 1; height: 38px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.seg button.on { background: var(--accent); color: #fff; }
+.tog { position: relative; width: 52px; height: 32px; flex: none; }
+.tog input { opacity: 0; position: absolute; inset: 0; margin: 0; z-index: 1; }
+.tog i { position: absolute; inset: 0; border-radius: 999px; background: #3a3a44; transition: background .2s; }
+.tog i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.tog input:checked + i { background: var(--accent); }
+.tog input:checked + i::after { transform: translateX(20px); }
+.row select { background: #111116; border: 0; border-radius: 10px; height: 38px; padding: 0 10px; font-weight: 600; }
+.swatches { display: flex; gap: 10px; margin-top: 10px; }
+.swatches button { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--line); }
+.swatches button.on { border-color: var(--accent-2); box-shadow: 0 0 0 2px var(--accent-2); }
+.time-set { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.time-set .t { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.time-set button { width: 48px; height: 40px; border-radius: 10px; background: #111116; font-weight: 700; }
+.est { color: var(--muted); font-size: 13px; margin-top: 8px; }
+
+#toast { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 30px); transform: translateX(-50%) translateY(20px); background: #2a2a33; padding: 12px 20px; border-radius: 12px; font-weight: 600; opacity: 0; transition: all .25s; z-index: 50; pointer-events: none; max-width: 90vw; text-align: center; }
+#toast.on { opacity: 1; transform: translateX(-50%); }
+#file { display: none; }
+
+/* ---------- Telefon ---------- */
+@media (max-width: 640px) {
+  #library { padding-left: 16px; padding-right: 16px; }
+  .lib-head h1 { font-size: 32px; }
+  .grid { grid-template-columns: 1fr; }
+  .card { min-height: 0; }
+  #editor { padding-left: 12px; padding-right: 12px; }
+  .ed-head { flex-wrap: wrap; }
+  .ed-head input { order: 5; flex-basis: 100%; }
+  #ed-text { font-size: 17px; padding: 14px; }
+  .chrome { padding-left: 10px; padding-right: 10px; gap: 6px; }
+  .chrome .txt { display: none; }
+  #topbar .title { font-size: 15px; }
+  .pill { height: 46px; min-width: 46px; padding: 0 10px; }
+  .pill.play { width: 66px; height: 66px; }
+  .pill.play svg { width: 28px; height: 28px; }
+  .spacer { display: none; }
+  .speed { height: 46px; }
+  .speed button { width: 40px; height: 46px; }
+  .speed .val { min-width: 58px; font-size: 15px; }
+  .speed .val small { font-size: 9px; }
+  #hud { font-size: 16px; right: 12px; }
+  #marker .arrow { left: calc(3px + var(--safe-x)); top: -11px; border-top-width: 11px; border-bottom-width: 11px; border-left-width: 15px; }
+  #countdown span { width: 170px; height: 170px; font-size: 96px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Biblioteka -->
+<section id="library" class="view on">
+  <div class="lib-head">
+    <h1>Skrypty</h1>
+    <button class="btn" id="btn-import"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importuj</button>
+    <button class="btn primary" id="btn-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nowy</button>
+  </div>
+  <div class="search">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Szukaj" autocomplete="off">
+  </div>
+  <div class="hint">Import: TXT, RTF, Word, PDF, Pages. Możesz wybrać kilka plików naraz z iCloud.</div>
+  <div class="grid" id="grid"></div>
+  <div class="lib-foot">
+    <button class="btn ghost" id="btn-backup"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3m0 12-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Kopia zapasowa</button>
+    <button class="btn ghost" id="btn-restore"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg>Przywróć z kopii</button>
+  </div>
+  <input type="file" id="file" multiple>
+</section>
+
+<!-- Edytor -->
+<section id="editor" class="view">
+  <div class="ed-head">
+    <button class="btn icon" id="ed-back" aria-label="Wróć"><svg class="i" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+    <input id="ed-title" placeholder="Tytuł skryptu">
+    <button class="btn" id="ed-save">Zapisz</button>
+    <button class="btn primary" id="ed-read"><svg class="i" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor" stroke="none"/></svg>Czytaj</button>
+  </div>
+  <textarea id="ed-text" placeholder="Wklej albo napisz tekst skryptu…" spellcheck="true"></textarea>
+  <div class="ed-foot">
+    <span id="ed-stats"></span>
+    <span>Pusta linia = nowy akapit · <code>*wyróżnienie*</code> · <code>[notatka]</code> · <code>//</code> pauza · <code># Ujęcie 2</code></span>
+  </div>
+</section>
+
+<!-- Prompter -->
+<section id="prompter" class="view">
+  <div id="stage">
+    <div id="content"></div>
+    <div id="fade"></div>
+    <div id="marker"><div class="band"></div><div class="arrow"></div></div>
+    <div id="hud"></div>
+    <div id="progress"></div>
+    <div id="endmsg">Koniec</div>
+    <div id="voicebadge" class="off"><i></i><span>głos</span></div>
+    <div id="heard"></div>
+    <div id="countdown"><span></span></div>
+  </div>
+
+  <div id="zoomhint"></div>
+  <div class="chrome" id="marginbar" aria-label="Margines"><i class="line"></i><i class="knob"></i></div>
+
+  <div class="chrome" id="topbar">
+    <button class="pill" id="p-back"><svg class="i" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg><span class="txt">Skrypty</span></button>
+    <div class="title" id="p-title"></div>
+    <button class="pill" id="p-full" aria-label="Pełny ekran" hidden><svg class="i" viewBox="0 0 24 24"><path id="p-full-ico" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button class="pill" id="p-edit" aria-label="Edytuj"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+    <button class="pill" id="p-settings"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="txt">Ustawienia</span></button>
+  </div>
+
+  <div class="chrome" id="bottombar">
+    <button class="pill" id="p-restart" aria-label="Od początku"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg></button>
+    <button class="pill" id="p-prev" aria-label="Poprzedni akapit"><svg class="i" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button>
+    <button class="pill play" id="p-play" aria-label="Start"><svg class="i" viewBox="0 0 24 24"><path id="p-play-ico" d="M7 4v16l13-8z"/></svg></button>
+    <button class="pill" id="p-next" aria-label="Następny akapit"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+    <div class="spacer"></div>
+    <div class="speed">
+      <button id="p-slower" aria-label="Wolniej"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <div class="val" id="p-speed"></div>
+      <button id="p-faster" aria-label="Szybciej"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+  </div>
+
+  <aside id="settings">
+    <div class="s-head"><h2>Ustawienia</h2><button class="pill" id="s-close">Gotowe</button></div>
+
+    <div class="grp"><h4>Przewijanie</h4>
+      <div class="row">
+        <div class="lbl"><span>Tryb</span></div>
+        <div class="seg" data-key="mode">
+          <button data-v="speed">Stała prędkość</button><button data-v="wpm">Słowa / min</button><button data-v="time">Czas</button>
+        </div>
+        <div id="mode-speed"><input type="range" min="1" max="40" step="1" data-play="speed"></div>
+        <div id="mode-wpm"><input type="range" min="60" max="260" step="5" data-play="wpm"></div>
+        <div id="mode-time" class="time-set">
+          <button data-dt="-15">−15</button><button data-dt="-5">−5</button>
+          <span class="t" id="time-val">1:00</span>
+          <button data-dt="5">+5</button><button data-dt="15">+15</button>
+        </div>
+        <div class="est" id="est"></div>
+      </div>
+      <div class="row">
+        <div class="lbl"><span>Odliczanie przed startem</span></div>
+        <div class="seg" data-key="countdown"><button data-v="0">Brak</button><button data-v="3">3 s</button><button data-v="5">5 s</button><button data-v="10">10 s</button></div>
+      </div>
+    </div>
+
+    <div class="grp"><h4>Śledzenie głosu (ElevenLabs)</h4>
+      <div class="row"><label>Tekst podąża za głosem <span class="tog"><input type="checkbox" data-key="voice"><i></i></span></label>
+        <div class="est">Tekst płynie w ustawionym tempie, a głos je koryguje: dogania Cię, gdy mówisz szybciej, i czeka, gdy robisz pauzę. Gdy rozpoznawanie się zgubi, tekst płynie dalej.</div></div>
+      <div class="row">
+        <div class="lbl"><span>Klucz API ElevenLabs</span><span id="el-status"></span></div>
+        <div class="keyrow"><input id="el-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="pill" id="el-save">Zapisz</button></div>
+        <div class="est">Klucz zostaje tylko na tym urządzeniu i nie trafia do kopii zapasowej. Koszt ok. 0,39 USD za godzinę, liczony tylko w trakcie czytania. Mikrofon działa tylko pod adresem https (albo na Macu).</div>
+      </div>
+      <div class="row"><label>Pokaż rozpoznany tekst <span class="tog"><input type="checkbox" data-key="voiceDebug"><i></i></span></label></div>
+    </div>
+
+    <div class="grp"><h4>Tekst</h4>
+      <div class="row"><label>Rozmiar czcionki <output data-out="fontSize"></output></label><input type="range" min="20" max="180" step="1" data-key="fontSize"></div>
+      <div class="row"><label>Czcionka
+        <select data-key="font">
+          <option value="system">Systemowa (SF)</option>
+          <option value="montserrat">Montserrat</option>
+          <option value="helvetica">Helvetica</option>
+          <option value="georgia">Georgia</option>
+          <option value="verdana">Verdana</option>
+          <option value="mono">Menlo</option>
+        </select></label></div>
+      <div class="row">
+        <div class="lbl"><span>Grubość</span></div>
+        <div class="seg" data-key="weight"><button data-v="400">Normalna</button><button data-v="600">Półgruba</button><button data-v="800">Gruba</button></div>
+      </div>
+      <div class="row"><label>Interlinia <output data-out="lineHeight"></output></label><input type="range" min="1" max="2" step="0.05" data-key="lineHeight"></div>
+      <div class="row"><label>Marginesy boczne <output data-out="margin"></output></label><input type="range" min="0" max="35" step="1" data-key="margin"></div>
+      <div class="row">
+        <div class="lbl"><span>Wyrównanie</span></div>
+        <div class="seg" data-key="align"><button data-v="left">Do lewej</button><button data-v="center">Środek</button><button data-v="right">Do prawej</button></div>
+      </div>
+      <div class="row"><label>Wielkie litery <span class="tog"><input type="checkbox" data-key="upper"><i></i></span></label></div>
+      <div class="row">
+        <div class="lbl"><span>Kolor tekstu</span></div>
+        <div class="swatches" data-key="fg">
+          <button data-v="#ffffff" style="background:#fff"></button><button data-v="#f6f6f6" style="background:#f6f6f6"></button>
+          <button data-v="#ffe680" style="background:#ffe680"></button><button data-v="#9be7a8" style="background:#9be7a8"></button>
+          <button data-v="#8fd3ff" style="background:#8fd3ff"></button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lbl"><span>Tło</span></div>
+        <div class="swatches" data-key="bg">
+          <button data-v="#000000" style="background:#000"></button><button data-v="#0f1128" style="background:#0f1128"></button>
+          <button data-v="#1c1e40" style="background:#1c1e40"></button><button data-v="#1a1a1a" style="background:#1a1a1a"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp"><h4>Lustro (szyba teleprompteru)</h4>
+      <div class="row"><label>Odbij w poziomie <span class="tog"><input type="checkbox" data-key="mirrorH"><i></i></span></label></div>
+      <div class="row"><label>Odbij w pionie <span class="tog"><input type="checkbox" data-key="mirrorV"><i></i></span></label></div>
+    </div>
+
+    <div class="grp"><h4>Wskaźnik odczytu</h4>
+      <div class="row"><label>Pokaż wskaźnik <span class="tog"><input type="checkbox" data-key="marker"><i></i></span></label></div>
+      <div class="row"><label>Pozycja wskaźnika <output data-out="markerPos"></output></label><input type="range" min="10" max="70" step="1" data-key="markerPos"></div>
+      <div class="row"><label>Przyciemnij przeczytany tekst <span class="tog"><input type="checkbox" data-key="fade"><i></i></span></label></div>
+      <div class="row"><label>Pokaż pozostały czas <span class="tog"><input type="checkbox" data-key="hud"><i></i></span></label></div>
+      <div class="row"><label>Pasek postępu <span class="tog"><input type="checkbox" data-key="progress"><i></i></span></label></div>
+    </div>
+  </aside>
+</section>
+
+<div id="toast"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
