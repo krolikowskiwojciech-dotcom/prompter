@@ -66,6 +66,13 @@ export function locate(spokenTail, script, cur) {
   return bestScore >= need ? best : -1;
 }
 
+// ile razy w liście słów pada „jeszcze raz” (komenda powtórki)
+export function countAgain(words) {
+  let n = 0;
+  for (let i = 0; i < words.length - 1; i++) if (words[i] === 'jeszcze' && words[i + 1] === 'raz') n++;
+  return n;
+}
+
 // ---------- mikrofon + ElevenLabs ----------
 
 const WORKLET = `class Tap extends AudioWorkletProcessor {
@@ -89,9 +96,11 @@ const b64 = (bytes) => {
 };
 
 export class Voice {
-  constructor({ onStatus, onWords }) {
+  constructor({ onStatus, onWords, onCommand }) {
     this.onStatus = onStatus;   // ('connecting'|'listening'|'error'|'off', komunikat?)
     this.onWords = onWords;     // (lista ostatnio wypowiedzianych słów, tekst do podglądu)
+    this.onCommand = onCommand; // ('again') — padło „jeszcze raz”
+    this.cmdSeen = 0;           // ile komend już obsłużono w bieżącej wypowiedzi (częściowe wyniki się powtarzają)
     this.committed = [];
     this.partial = [];
     this.lastSpeech = 0;
@@ -105,6 +114,7 @@ export class Voice {
     this.apiKey = apiKey;
     this.committed = [];
     this.partial = [];
+    this.cmdSeen = 0;
     this.queue = [];
     this.queued = 0;
     this.onStatus('connecting');
@@ -157,15 +167,23 @@ export class Voice {
       const w = splitWords(m.text || '');
       if (w.length !== this.partial.length || w[w.length - 1] !== this.partial[this.partial.length - 1]) this.lastSpeech = performance.now();
       this.partial = w;
+      this.command(countAgain(w));
       this.emit(m.text);
     } else if (t === 'committed_transcript') {
-      this.committed = this.committed.concat(splitWords(m.text || '')).slice(-20);
+      const w = splitWords(m.text || '');
+      this.command(countAgain(w));
+      this.cmdSeen = 0; // następna wypowiedź liczy od zera
+      this.committed = this.committed.concat(w).slice(-20);
       this.partial = [];
       this.emit(m.text);
     } else if (m.error || /error|exceeded|limited/.test(t)) {
       const msg = t === 'auth_error' ? 'Nieprawidłowy klucz API' : t === 'quota_exceeded' ? 'Wyczerpany limit ElevenLabs' : (m.error || t);
       this.fail(new Error(msg));
     }
+  }
+
+  command(n) {
+    if (n > this.cmdSeen) { this.cmdSeen = n; this.onCommand?.('again'); }
   }
 
   emit(text) {

@@ -114,6 +114,9 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 #endmsg.on { display: block; }
 #zoomhint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; background: rgba(30,30,38,.9); padding: 12px 22px; border-radius: 14px; font: 700 24px Montserrat, system-ui, sans-serif; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity .2s; pointer-events: none; }
 #zoomhint.on { opacity: 1; }
+#cmdflash { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); padding: 14px 28px; border-radius: 16px; background: rgba(168, 95, 156, 0.92); color: #fff; font: 800 34px Montserrat, system-ui, sans-serif; opacity: 0; pointer-events: none; white-space: nowrap; }
+#cmdflash.on { animation: cmdflash 1.6s ease-out; }
+@keyframes cmdflash { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
 #voicebadge { position: absolute; top: calc(var(--safe-t) + 14px); left: calc(22px + var(--safe-x)); display: flex; align-items: center; gap: 8px; font: 600 16px Montserrat, system-ui, sans-serif; color: rgba(255,255,255,.55); pointer-events: none; }
 #voicebadge i { width: 10px; height: 10px; border-radius: 50%; background: #666; }
 #voicebadge.connecting i { background: #f5a524; }
@@ -266,6 +269,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     <div id="endmsg">Koniec</div>
     <div id="voicebadge" class="off"><i></i><span>głos</span></div>
     <div id="heard"></div>
+    <div id="cmdflash">↺ jeszcze raz</div>
     <div id="countdown"><span></span></div>
   </div>
 
@@ -328,6 +332,8 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
         <div class="keyrow"><input id="el-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="pill" id="el-save">Zapisz</button></div>
         <div class="est">Przy włączonej synchronizacji klucz trafia do Twojego prywatnego repozytorium i sam pojawia się na pozostałych urządzeniach. Nie trafia do kopii zapasowej. Koszt ok. 0,39 USD za godzinę, liczony tylko w trakcie czytania. Mikrofon działa tylko pod adresem https (albo na Macu).</div>
       </div>
+      <div class="row"><label>„Jeszcze raz” cofa do początku akapitu <span class="tog"><input type="checkbox" data-key="voiceAgain"><i></i></span></label>
+        <div class="est">Powiedz „jeszcze raz”, a tekst wróci na początek akapitu i poczeka, aż zaczniesz czytać. Z klawiatury lub pilota: R.</div></div>
       <div class="row"><label>Pokaż rozpoznany tekst <span class="tog"><input type="checkbox" data-key="voiceDebug"><i></i></span></label></div>
     </div>
 

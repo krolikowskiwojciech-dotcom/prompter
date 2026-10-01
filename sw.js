@@ -1,6 +1,6 @@
 // Offline: aplikacja działa bez internetu po pierwszym otwarciu.
 // Własne pliki: najpierw sieć (żeby aktualizacje docierały od razu), w razie braku — pamięć podręczna.
-const CACHE = 'prompter-v5';
+const CACHE = 'prompter-v6';
 const SHELL = ['./', 'index.html', 'app.js', 'parsers.js', 'voice.js', 'sync.js', 'manifest.webmanifest', 'icon-180.png', 'icon-512.png', 'fonts/Montserrat-Variable.ttf'];
 
 self.addEventListener('install', (e) => {

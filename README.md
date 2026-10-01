@@ -16,6 +16,7 @@ Instalacja: Safari → Udostępnij → „Dodaj do ekranu początkowego”.
   (plik `skrypty.json`), token fine-grained ograniczony do tego repo; scalanie po `updated`, usunięcia jako `deleted`.
 - Śledzenie głosu (`voice.js`): ElevenLabs Scribe v2 Realtime, tryb mieszany — głos koryguje stałe tempo.
   Token jednorazowy pobierany w przeglądarce kluczem wpisanym w Ustawieniach.
+  Komenda głosowa „jeszcze raz” (albo klawisz R) cofa do początku akapitu i czeka na ponowne czytanie.
 
 ## Znaczniki w tekście
 Pusta linia = nowy akapit · `*wyróżnienie*` · `[notatka — nie czytasz]` · `//` pauza · `# Ujęcie 2` nagłówek.

@@ -21,7 +21,7 @@ const DEFAULTS = {
   marker: true, markerPos: 30, fade: true, hud: true, progress: true, countdown: '3',
   // domyślne tempo dla skryptów, które nie mają jeszcze własnego
   mode: 'speed', speed: 12, wpm: 140,
-  voice: false, voiceDebug: true,
+  voice: false, voiceDebug: true, voiceAgain: true,
 };
 
 // ---------- pamięć ----------
@@ -636,6 +636,7 @@ document.addEventListener('keydown', (e) => {
   else if (k === 'ArrowDown') nudge(-1);
   else if (k === 'ArrowLeft' || k === 'PageUp') jumpPara(-1);
   else if (k === 'ArrowRight' || k === 'PageDown') jumpPara(1);
+  else if (k === 'r' || k === 'R' || k === 'Backspace') againParagraph(false);
   else if (k === 'Escape') closePrompter();
   else return;
   e.preventDefault();
@@ -678,7 +679,7 @@ function setElKey(key, at = Date.now()) {
 // klucz zapisany przed wprowadzeniem synchronizacji dostaje znacznik czasu, żeby trafił do repo
 if (elKey() && !elKeyAt()) setElKey(elKey());
 let wordNorms = [], wordY = [];       // słowa skryptu i ich pozycja (w jednostkach offsetu)
-let voiceCur = 0, voiceTarget = 0, voiceTs = 0, vCur = 0;
+let voiceCur = 0, voiceTarget = 0, voiceTs = 0, vCur = 0, holdTs = 0;
 
 const voice = new Voice({
   onStatus(state, msg) {
@@ -696,7 +697,28 @@ const voice = new Voice({
     voiceTarget = wordY[j];
     voiceTs = performance.now();
   },
+  onCommand() {
+    if (settings.voiceAgain && playing) againParagraph(true);
+  },
 });
+
+// „jeszcze raz”: powrót do początku bieżącego akapitu; tekst czeka, aż zaczniesz go czytać od nowa
+function againParagraph(byVoice) {
+  if (byVoice) {
+    // fraza zapisana w samym skrypcie, w miejscu czytania, to nie komenda
+    for (let k = Math.max(0, voiceCur - 4); k < Math.min(wordNorms.length - 1, voiceCur + 15); k++) {
+      if (wordNorms[k] === 'jeszcze' && wordNorms[k + 1] === 'raz') return;
+    }
+  }
+  const pos = voiceTs ? voiceTarget : offset; // miejsce, w którym mówisz (gdy głos je zna), a nie to na wskaźniku
+  const tops = paraTops.filter((t) => t <= pos + lhPx * 0.3);
+  jumpTo(tops.length ? tops[tops.length - 1] : 0);
+  holdTs = performance.now();
+  const f = $('#cmdflash');
+  f.classList.remove('on');
+  void f.offsetWidth; // restart animacji
+  f.classList.add('on');
+}
 
 // pozycja każdego słowa: offset, przy którym linia z tym słowem stoi na wskaźniku
 function measureWords() {
@@ -750,7 +772,12 @@ function startVoice() {
 function velocity(dt) {
   const v0 = pxPerSec();
   let v = v0;
-  if (voice.active) {
+  if (voice.active && holdTs) {
+    // po „jeszcze raz” stoimy do pierwszego dopasowania (max 8 s, gdyby rozpoznawanie się nie odnalazło)
+    if (voiceTs > holdTs || performance.now() - holdTs > 8000) holdTs = 0;
+    else v = 0;
+  }
+  if (voice.active && !holdTs) {
     const now = performance.now();
     const talking = now - voice.lastSpeech < 1500;
     if (!talking) v = v0 * clamp((voiceTarget + lhPx * 0.8 - offset) / lhPx, 0, 1);
