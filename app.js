@@ -1,5 +1,6 @@
 import { fileToScript } from './parsers.js';
 import { Voice, locate, mintToken, norm } from './voice.js';
+import { pull, push, merge, forRemote } from './sync.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -36,10 +37,17 @@ let settings = { ...DEFAULTS, ...store.get('tp.settings', {}) };
 let scripts = store.get('tp.scripts', []);
 navigator.storage?.persist?.().catch(() => {});
 
+// usunięte skrypty zostają jako wpis `deleted`, żeby usunięcie dotarło też na inne urządzenia
+const live = () => scripts.filter((s) => !s.deleted);
+
 let saveTimer;
 function persist() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { store.set('tp.settings', settings); store.set('tp.scripts', scripts); }, 250);
+  saveTimer = setTimeout(() => {
+    store.set('tp.settings', settings);
+    store.set('tp.scripts', scripts);
+    if (JSON.stringify(forRemote(scripts)) !== syncedHash) scheduleSync(2500);
+  }, 250);
 }
 
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -115,11 +123,11 @@ const ICON = {
 
 function renderLibrary() {
   const q = $('#q').value.trim().toLowerCase();
-  const list = scripts
+  const list = live()
     .filter((s) => !q || (s.title + ' ' + s.text).toLowerCase().includes(q))
     .sort((a, b) => (b.used || b.updated) - (a.used || a.updated));
   const grid = $('#grid');
-  if (!scripts.length) {
+  if (!live().length) {
     grid.innerHTML = '<div class="empty"><b>Brak skryptów</b>Zaimportuj pliki z iCloud przyciskiem „Importuj” albo napisz nowy skrypt.</div>';
     return;
   }
@@ -143,7 +151,8 @@ $('#grid').addEventListener('click', (e) => {
   if (act === 'edit') openEditor(s);
   else if (act === 'del') {
     if (confirm(`Usunąć skrypt „${s.title}”?`)) {
-      scripts = scripts.filter((x) => x !== s);
+      for (const k of Object.keys(s)) if (k !== 'id') delete s[k];
+      Object.assign(s, { deleted: true, updated: Date.now() });
       persist();
       renderLibrary();
     }
@@ -180,7 +189,7 @@ $('#file').addEventListener('change', async (e) => {
 });
 
 $('#btn-backup').onclick = () => {
-  const data = JSON.stringify({ app: 'prompter', version: 1, settings, scripts }, null, 1);
+  const data = JSON.stringify({ app: 'prompter', version: 1, settings, scripts: live() }, null, 1);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
   a.download = `prompter-kopia-${new Date().toISOString().slice(0, 10)}.json`;
@@ -194,7 +203,7 @@ async function restoreBackup(file) {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data.scripts)) throw new Error();
     const known = new Set(scripts.map((s) => s.id));
-    const fresh = data.scripts.filter((s) => !known.has(s.id));
+    const fresh = data.scripts.filter((s) => !known.has(s.id) && !s.deleted);
     scripts.push(...fresh);
     if (data.settings) settings = { ...DEFAULTS, ...data.settings };
     persist();
@@ -427,6 +436,7 @@ function nudge(dir) {
 
 function savePlay() {
   cur.play = { ...P };
+  cur.updated = Date.now(); // tempo synchronizuje się razem ze skryptem
   Object.assign(settings, { mode: P.mode, speed: P.speed, wpm: P.wpm });
   persist();
   syncSettingsUI();
@@ -822,13 +832,108 @@ Na szybie tekst musi być odbity. Włącz „Odbij w poziomie” w Ustawieniach.
 Tempo i czas zapamiętują się osobno dla każdego skryptu. // Pozostałe ustawienia są wspólne.`;
 
 if (!store.get('tp.seeded', false)) {
-  if (!scripts.length) addScript('Instrukcja', SAMPLE);
+  if (!scripts.length) Object.assign(addScript('Instrukcja', SAMPLE), { id: 'instrukcja', updated: 1 });
   store.set('tp.seeded', true);
   persist();
 }
 
+// ---------- synchronizacja (prywatne repozytorium GitHub) ----------
+
+const SYNC_REPO = 'krolikowskiwojciech-dotcom/prompter-dane';
+let syncedHash = '', syncBusy = false, syncAgain = false, syncTimer, syncAt = 0;
+const syncCfg = () => store.get('tp.sync', null);
+
+function scheduleSync(ms = 0) {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, ms);
+}
+
+function syncStatus(state, msg) {
+  const el = $('#sync-state');
+  el.className = 'sync-state ' + state;
+  const time = syncAt ? new Date(syncAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '';
+  el.lastElementChild.textContent = {
+    off: 'Synchronizacja wyłączona', busy: 'Synchronizuję…', ok: `Zsynchronizowano ${time}`, error: 'Błąd synchronizacji',
+  }[state];
+  $('#sync-msg').textContent = state === 'error' ? msg : state === 'ok' ? `Ostatnio: ${time}` : '';
+  $('#sync-msg').style.color = state === 'error' ? '#ff8a8d' : 'var(--muted)';
+}
+
+// scalona lista wraca do lokalnych obiektów (ten sam obiekt = otwarty skrypt dalej działa)
+function applyMerged(merged) {
+  let changed = false;
+  for (const m of merged) {
+    const l = scripts.find((s) => s.id === m.id);
+    if (!l) { scripts.push({ ...m }); changed = true; }
+    else if (l !== m && (m.updated || 0) > (l.updated || 0)) {
+      const used = l.used;
+      for (const k of Object.keys(l)) delete l[k];
+      Object.assign(l, m, used ? { used } : {});
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+async function syncNow() {
+  const cfg = syncCfg();
+  if (!cfg?.token) { syncStatus('off'); return; }
+  if (syncBusy) { syncAgain = true; return; }
+  syncBusy = true;
+  syncStatus('busy');
+  try {
+    for (let attempt = 0; ; attempt++) {
+      const { sha, list } = await pull(cfg.repo || SYNC_REPO, cfg.token);
+      const merged = merge(scripts, list);
+      const changed = applyMerged(merged);
+      const out = forRemote(merged);
+      if (JSON.stringify(out) !== JSON.stringify(forRemote(list))) {
+        try { await push(cfg.repo || SYNC_REPO, cfg.token, out, sha); }
+        catch (e) { if (e.conflict && attempt < 3) continue; throw e; }
+      }
+      syncedHash = JSON.stringify(forRemote(scripts));
+      store.set('tp.scripts', scripts);
+      syncAt = Date.now();
+      syncStatus('ok');
+      if (changed && $('#library').classList.contains('on')) renderLibrary();
+      break;
+    }
+  } catch (e) {
+    syncStatus('error', e.message);
+  } finally {
+    syncBusy = false;
+    if (syncAgain) { syncAgain = false; scheduleSync(300); }
+  }
+}
+
+$('#btn-sync').onclick = () => {
+  const box = $('#syncbox');
+  box.hidden = !box.hidden;
+  $('#sync-repo').value = syncCfg()?.repo || SYNC_REPO;
+  $('#sync-token').placeholder = syncCfg()?.token ? '•••••••• (zapisany)' : 'github_pat_…';
+};
+$('#sync-save').onclick = () => {
+  const token = $('#sync-token').value.trim() || syncCfg()?.token;
+  const repo = $('#sync-repo').value.trim() || SYNC_REPO;
+  if (!token) { syncStatus('error', 'Wklej token GitHub'); return; }
+  store.set('tp.sync', { token, repo });
+  $('#sync-token').value = '';
+  $('#sync-token').placeholder = '•••••••• (zapisany)';
+  syncNow();
+};
+$('#sync-off').onclick = () => {
+  if (!confirm('Wyłączyć synchronizację na tym urządzeniu? Skrypty zostają na urządzeniu i w repozytorium.')) return;
+  try { localStorage.removeItem('tp.sync'); } catch { /* nic */ }
+  syncStatus('off');
+};
+
+// pobieranie zmian z innych urządzeń: przy starcie, po powrocie do aplikacji i co minutę (nie w trakcie czytania)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleSync(); });
+setInterval(() => { if (document.visibilityState === 'visible' && !playing && !counting) syncNow(); }, 60000);
+
 bindSettings();
 renderLibrary();
+scheduleSync();
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

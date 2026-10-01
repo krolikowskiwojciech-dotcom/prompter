@@ -12,6 +12,8 @@ Instalacja: Safari → Udostępnij → „Dodaj do ekranu początkowego”.
 - Odbicie w poziomie/pionie, wskaźnik odczytu, przyciemnianie przeczytanego tekstu, odliczanie.
 - Gesty: stuknięcie = start/pauza, przeciąganie = przewijanie, szczypanie = rozmiar tekstu,
   uchwyt przy prawej krawędzi = marginesy. Klawisze (pilot/pedał Bluetooth): spacja, strzałki, PageUp/PageDown.
+- Synchronizacja (`sync.js`): skrypty i ich tempo w prywatnym repo `krolikowskiwojciech-dotcom/prompter-dane`
+  (plik `skrypty.json`), token fine-grained ograniczony do tego repo; scalanie po `updated`, usunięcia jako `deleted`.
 - Śledzenie głosu (`voice.js`): ElevenLabs Scribe v2 Realtime, tryb mieszany — głos koryguje stałe tempo.
   Token jednorazowy pobierany w przeglądarce kluczem wpisanym w Ustawieniach.
 

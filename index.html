@@ -65,6 +65,20 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .card .acts svg { width: 19px; height: 19px; }
 .empty { margin: 60px auto; text-align: center; color: var(--muted); max-width: 440px; }
 .empty b { color: var(--text); display: block; font-size: 20px; margin-bottom: 8px; }
+#btn-sync { display: inline-flex; margin: 0 0 16px; }
+.sync-state { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
+.sync-state i { width: 9px; height: 9px; border-radius: 50%; background: #555; }
+.sync-state.ok i { background: #3ccf6e; }
+.sync-state.busy i { background: #f5a524; }
+.sync-state.error i { background: var(--danger); }
+.sync-state.error { color: #ff8a8d; }
+#syncbox { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 22px; max-width: 640px; }
+#syncbox h3 { margin: 0 0 6px; font-size: 18px; }
+#syncbox p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+#syncbox label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+#syncbox input { display: block; width: 100%; margin-top: 6px; height: 46px; border: 0; border-radius: 12px; background: #111116; padding: 0 14px; font-size: 16px; outline: none; -webkit-user-select: text; user-select: text; }
+.sync-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+#sync-msg { margin-top: 10px; font-size: 14px; color: #ff8a8d; }
 .lib-foot { margin-top: 36px; display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ---------- Edytor ---------- */
@@ -205,6 +219,15 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     <input id="q" type="search" placeholder="Szukaj" autocomplete="off">
   </div>
   <div class="hint">Import: TXT, RTF, Word, PDF, Pages. Możesz wybrać kilka plików naraz z iCloud.</div>
+  <button id="btn-sync"><span id="sync-state" class="sync-state off"><i></i><span>Synchronizacja wyłączona</span></span></button>
+  <div id="syncbox" hidden>
+    <h3>Synchronizacja między urządzeniami</h3>
+    <p>Skrypty i ich tempo zapisują się w Twoim prywatnym repozytorium GitHub, więc to, co zaimportujesz na telefonie, pojawi się na iPadzie. Na każdym urządzeniu wpisz ten sam token. Ustawienia wyglądu i klucz ElevenLabs zostają osobno na każdym urządzeniu.</p>
+    <label>Repozytorium<input id="sync-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label>Token GitHub<input id="sync-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <div class="sync-btns"><button class="btn primary" id="sync-save">Zapisz i synchronizuj</button><button class="btn ghost" id="sync-off">Wyłącz</button></div>
+    <div id="sync-msg"></div>
+  </div>
   <div class="grid" id="grid"></div>
   <div class="lib-foot">
     <button class="btn ghost" id="btn-backup"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3m0 12-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Kopia zapasowa</button>
