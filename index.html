@@ -48,7 +48,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
 /* ---------- Biblioteka ---------- */
-#library { flex-direction: column; overflow: auto; padding: calc(var(--safe-t) + 28px) 32px calc(var(--safe-b) + 40px); -webkit-overflow-scrolling: touch; }
+#library { flex-direction: column; overflow: auto; padding: calc(var(--safe-t) + 28px) 32px calc(var(--safe-b) + 120px); -webkit-overflow-scrolling: touch; }
 .lib-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .lib-head h1 { font-size: 40px; font-weight: 800; margin: 0; letter-spacing: -0.02em; flex: 1; }
 .btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border-radius: 999px; background: var(--card); font-weight: 600; font-size: 16px; }
@@ -106,11 +106,22 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .filters button { flex: none; height: 36px; padding: 0 14px; border-radius: 999px; background: var(--card); color: var(--muted); font-size: 14px; font-weight: 600; }
 .filters button small { opacity: .7; margin-left: 2px; }
 .filters button.on { background: var(--accent); color: #fff; }
-.card .meta { align-items: center; }
+.card .meta { align-items: center; flex-wrap: wrap; row-gap: 8px; }
+.card .meta span { white-space: nowrap; }
 .st { margin-left: auto; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #2c2c35; color: var(--muted); }
 .st-gotowy { background: rgba(245, 165, 36, .18); color: #f5b84a; }
 .st-nagrany { background: rgba(60, 207, 110, .16); color: #5fd88a; }
 .st-zmontowany { background: rgba(143, 211, 255, .16); color: #8fd3ff; }
+/* elementy listy nie mogą się ściskać w kolumnie (pasek filtrów znikał do kreski) */
+#library > * { flex-shrink: 0; }
+/* dolny pasek z kafelkami */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+  padding: 12px max(16px, var(--safe-x)) calc(var(--safe-b) + 12px); background: rgba(13, 13, 16, 0.92); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
+.tabbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 66px; border-radius: 16px; background: var(--card); font-size: 13px; font-weight: 600; color: var(--text); }
+.tabbar button svg { width: 24px; height: 24px; }
+.tabbar button.primary { background: var(--accent); color: #fff; }
+.tabbar button:active { filter: brightness(1.2); }
+@media (min-width: 700px) { .tabbar { width: 100%; max-width: 620px; left: 50%; right: auto; transform: translateX(-50%); border: 1px solid var(--line); border-bottom: 0; border-radius: 22px 22px 0 0; } }
 .backup-btns { display: flex; flex-direction: column; gap: 8px; }
 .lib-foot { margin-top: 36px; display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -212,7 +223,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
 .time-set button { width: 48px; height: 40px; border-radius: 10px; background: #111116; font-weight: 700; }
 .est { color: var(--muted); font-size: 13px; margin-top: 8px; }
 
-#toast { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 30px); transform: translateX(-50%) translateY(20px); background: #2a2a33; padding: 12px 20px; border-radius: 12px; font-weight: 600; opacity: 0; transition: all .25s; z-index: 50; pointer-events: none; max-width: 90vw; text-align: center; }
+#toast { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 112px); transform: translateX(-50%) translateY(20px); background: #2a2a33; padding: 12px 20px; border-radius: 12px; font-weight: 600; opacity: 0; transition: all .25s; z-index: 50; pointer-events: none; max-width: 90vw; text-align: center; }
 #toast.on { opacity: 1; transform: translateX(-50%); }
 #file { display: none; }
 
@@ -249,16 +260,11 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
 <section id="library" class="view on">
   <div class="lib-head">
     <h1>Skrypty</h1>
-    <button class="btn" id="btn-import"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importuj</button>
-    <button type="button" class="info" data-help="h-import" aria-label="Wyjaśnienie">i</button>
-    <button class="btn icon" id="btn-settings" aria-label="Ustawienia"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
-    <button class="btn primary" id="btn-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nowy</button>
   </div>
   <div class="search">
     <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input id="q" type="search" placeholder="Szukaj" autocomplete="off">
   </div>
-  <div class="hint help" id="h-import">Import: TXT, RTF, Word, PDF, Pages. Możesz wybrać kilka plików naraz z iCloud.</div>
   <div class="filters" id="filters"></div>
   <button id="btn-sync"><span id="sync-state" class="sync-state off"><i></i><span>Synchronizacja wyłączona</span></span></button>
   <div id="syncbox" hidden>
@@ -271,6 +277,11 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
   </div>
   <div class="grid" id="grid"></div>
   <input type="file" id="file" multiple>
+  <nav class="tabbar">
+    <button id="btn-import"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span>Importuj</span></button>
+    <button id="btn-new" class="primary"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Nowy</span></button>
+    <button id="btn-settings"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Ustawienia</span></button>
+  </nav>
 </section>
 
 <!-- Edytor -->
@@ -427,6 +438,10 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
       <div class="row"><label>Pokaż pozostały czas <span class="tog"><input type="checkbox" data-key="hud"><i></i></span></label></div>
       <div class="row"><label>Pasek postępu <span class="tog"><input type="checkbox" data-key="progress"><i></i></span></label></div>
     </div>
+    <div class="grp"><h4>Import plików</h4>
+      <p class="est" style="margin: 0 2px">TXT, RTF, Word, PDF, Pages. Kilka plików naraz z iCloud — przycisk „Importuj” na dole listy skryptów.</p>
+    </div>
+
     <div class="grp"><h4>Kopia zapasowa <button type="button" class="info" data-help="h-backup" aria-label="Wyjaśnienie">i</button></h4>
       <p class="help" id="h-backup">Na co dzień niepotrzebna — synchronizacja z GitHubem trzyma każdą wersję skryptów. Plik kopii przydaje się, gdy synchronizacja jest wyłączona.</p>
       <div class="backup-btns">
