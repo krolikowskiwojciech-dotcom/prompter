@@ -13,6 +13,11 @@ const FONTS = {
   georgia: 'Georgia, "Times New Roman", serif',
   verdana: 'Verdana, Geneva, sans-serif',
   mono: 'Menlo, ui-monospace, monospace',
+  // wbudowane w iPadOS/iOS/macOS — działają bez pobierania
+  rounded: 'ui-rounded, "SF Pro Rounded", -apple-system, sans-serif',
+  newyork: 'ui-serif, "New York", Georgia, serif',
+  avenir: '"Avenir Next", Avenir, -apple-system, sans-serif',
+  charter: 'Charter, "Bitstream Charter", Georgia, serif',
 };
 
 const DEFAULTS = {
