@@ -824,7 +824,7 @@ function bindSettings() {
   $$('select[data-key]', panel).forEach((sel) => {
     sel.addEventListener('change', () => { settings[sel.dataset.key] = sel.value; persist(); applySettings(); });
   });
-  $$('.seg[data-key], .swatches[data-key]', panel).forEach((box) => {
+  $$('.seg[data-key], .swatches[data-key], .fontpick[data-key]', panel).forEach((box) => {
     box.addEventListener('click', (e) => {
       const b = e.target.closest('button[data-v]');
       if (!b) return;
@@ -852,7 +852,7 @@ function syncSettingsUI() {
   $$('input[type=range][data-key]', panel).forEach((i) => { i.value = settings[i.dataset.key]; });
   $$('input[type=checkbox][data-key]', panel).forEach((i) => { i.checked = !!settings[i.dataset.key]; });
   $$('select[data-key]', panel).forEach((s) => { s.value = settings[s.dataset.key]; });
-  $$('.seg[data-key], .swatches[data-key]', panel).forEach((box) => {
+  $$('.seg[data-key], .swatches[data-key], .fontpick[data-key]', panel).forEach((box) => {
     const v = box.dataset.key === 'mode' ? P?.mode : String(settings[box.dataset.key]);
     $$('button', box).forEach((b) => b.classList.toggle('on', b.dataset.v === v));
   });

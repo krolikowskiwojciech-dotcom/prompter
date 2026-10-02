@@ -90,6 +90,11 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 #settings.lib .lib-only:not(.help), #settings.lib .help.lib-only.open { display: inline; }
 #settings.lib p.help.lib-only.open { display: block; color: var(--muted); font-size: 13px; margin: 0 0 10px; }
 #settings:not(.lib) .lib-only { display: none !important; }
+.fontpick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.fontpick button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 9px; border-radius: 12px; background: #111116; border: 2px solid transparent; color: var(--muted); }
+.fontpick button b { font-size: 26px; line-height: 1; color: var(--text); font-weight: 600; }
+.fontpick button span { font-size: 12px; }
+.fontpick button.on { border-color: var(--accent); background: rgba(168, 95, 156, 0.18); color: var(--text); }
 .backup-btns { display: flex; flex-direction: column; gap: 8px; }
 .lib-foot { margin-top: 36px; display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -347,15 +352,17 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
 
     <div class="grp"><h4>Tekst</h4>
       <div class="row"><label>Rozmiar czcionki <output data-out="fontSize"></output></label><input type="range" min="20" max="180" step="1" data-key="fontSize"></div>
-      <div class="row"><label>Czcionka
-        <select data-key="font">
-          <option value="system">Systemowa (SF)</option>
-          <option value="montserrat">Montserrat</option>
-          <option value="helvetica">Helvetica</option>
-          <option value="georgia">Georgia</option>
-          <option value="verdana">Verdana</option>
-          <option value="mono">Menlo</option>
-        </select></label></div>
+      <div class="row">
+        <div class="lbl"><span>Czcionka</span></div>
+        <div class="fontpick" data-key="font">
+          <button data-v="system" style="font-family: -apple-system, system-ui, sans-serif"><b>Aa</b><span>Systemowa</span></button>
+          <button data-v="montserrat" style="font-family: Montserrat, sans-serif"><b>Aa</b><span>Montserrat</span></button>
+          <button data-v="helvetica" style="font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif"><b>Aa</b><span>Helvetica</span></button>
+          <button data-v="georgia" style="font-family: Georgia, serif"><b>Aa</b><span>Georgia</span></button>
+          <button data-v="verdana" style="font-family: Verdana, Geneva, sans-serif"><b>Aa</b><span>Verdana</span></button>
+          <button data-v="mono" style="font-family: Menlo, ui-monospace, monospace"><b>Aa</b><span>Menlo</span></button>
+        </div>
+      </div>
       <div class="row">
         <div class="lbl"><span>Grubość</span></div>
         <div class="seg" data-key="weight"><button data-v="400">Normalna</button><button data-v="600">Półgruba</button><button data-v="800">Gruba</button></div>
