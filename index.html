@@ -149,12 +149,13 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .spacer { width: 18px; }
 
 /* ---------- Ustawienia ---------- */
-#settings { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); background: rgba(20,20,26,.97); z-index: 10; transform: translateX(105%); transition: transform .28s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(var(--safe-t) + 16px) 22px calc(var(--safe-b) + 30px); border-left: 1px solid var(--line); }
+#settings { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); background: rgba(20,20,26,.97); z-index: 10; transform: translateX(105%); transition: transform .28s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 22px calc(var(--safe-b) + 30px); border-left: 1px solid var(--line); }
 #settings.on { transform: none; }
 #settings.lib #tempo-row { display: none; }
 #settings .lib-note { display: none; color: var(--muted); font-size: 13px; margin: 4px 0 0; }
 #settings.lib .lib-note { display: block; }
-.s-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+/* nagłówek z „Gotowe” przypięty u góry podczas przewijania */
+.s-head { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; margin: 0 -22px 8px; padding: calc(var(--safe-t) + 16px) 22px 12px; background: rgb(20,20,26); border-bottom: 1px solid var(--line); }
 .s-head h2 { margin: 0; font-size: 24px; font-weight: 800; }
 .grp { margin-top: 22px; }
 .grp > h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
