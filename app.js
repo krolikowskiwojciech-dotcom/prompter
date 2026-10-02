@@ -18,6 +18,10 @@ const FONTS = {
   newyork: 'ui-serif, "New York", Georgia, serif',
   avenir: '"Avenir Next", Avenir, -apple-system, sans-serif',
   charter: 'Charter, "Bitstream Charter", Georgia, serif',
+  // dołączone do aplikacji (fonts/), działają offline
+  dyslexic: '"OpenDyslexic", -apple-system, sans-serif',
+  atkinson: '"Atkinson Hyperlegible", -apple-system, sans-serif',
+  lexend: '"Lexend", -apple-system, sans-serif',
 };
 
 const DEFAULTS = {

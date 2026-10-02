@@ -14,6 +14,12 @@
 <link rel="icon" href="icon-180.png">
 <style>
 @font-face { font-family: 'Montserrat'; src: url('fonts/Montserrat-Variable.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
+/* czcionki do czytania (SIL OFL, licencje w fonts/licencje) */
+@font-face { font-family: 'OpenDyslexic'; src: url('fonts/OpenDyslexic-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'OpenDyslexic'; src: url('fonts/OpenDyslexic-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Atkinson Hyperlegible'; src: url('fonts/AtkinsonHyperlegible-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Atkinson Hyperlegible'; src: url('fonts/AtkinsonHyperlegible-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Lexend'; src: url('fonts/Lexend-Variable.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
 
 :root {
   --bg: #0d0d10;
@@ -90,10 +96,10 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 #settings.lib .lib-only:not(.help), #settings.lib .help.lib-only.open { display: inline; }
 #settings.lib p.help.lib-only.open { display: block; color: var(--muted); font-size: 13px; margin: 0 0 10px; }
 #settings:not(.lib) .lib-only { display: none !important; }
-.fontpick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.fontpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .fontpick button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 9px; border-radius: 12px; background: #111116; border: 2px solid transparent; color: var(--muted); }
 .fontpick button b { font-size: 26px; line-height: 1; color: var(--text); font-weight: 600; }
-.fontpick button span { font-size: 12px; }
+.fontpick button span { font-family: Montserrat, system-ui, sans-serif; font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fontpick button.on { border-color: var(--accent); background: rgba(168, 95, 156, 0.18); color: var(--text); }
 .backup-btns { display: flex; flex-direction: column; gap: 8px; }
 .lib-foot { margin-top: 36px; display: flex; gap: 10px; flex-wrap: wrap; }
@@ -365,6 +371,9 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
           <button data-v="newyork" style="font-family: ui-serif, Georgia, serif"><b>Aa</b><span>New York</span></button>
           <button data-v="avenir" style="font-family: &quot;Avenir Next&quot;, Avenir, sans-serif"><b>Aa</b><span>Avenir</span></button>
           <button data-v="charter" style="font-family: Charter, Georgia, serif"><b>Aa</b><span>Charter</span></button>
+          <button data-v="dyslexic" style="font-family: 'OpenDyslexic', sans-serif"><b>Aa</b><span>Dyslexic</span></button>
+          <button data-v="atkinson" style="font-family: 'Atkinson Hyperlegible', sans-serif"><b>Aa</b><span>Atkinson</span></button>
+          <button data-v="lexend" style="font-family: 'Lexend', sans-serif"><b>Aa</b><span>Lexend</span></button>
         </div>
       </div>
       <div class="row">
