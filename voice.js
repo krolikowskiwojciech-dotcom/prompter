@@ -66,12 +66,16 @@ export function locate(spokenTail, script, cur) {
   return bestScore >= need ? best : -1;
 }
 
-// ile razy w liście słów pada „jeszcze raz” (komenda powtórki)
-export function countAgain(words) {
+// komendy głosowe: fraza (po normalizacji) → nazwa komendy
+export const COMMANDS = { again: ['jeszcze', 'raz'], restart: ['skrypt', 'od', 'nowa'] };
+
+// ile razy fraza pada w liście słów
+export function countPhrase(words, phrase) {
   let n = 0;
-  for (let i = 0; i < words.length - 1; i++) if (words[i] === 'jeszcze' && words[i + 1] === 'raz') n++;
+  for (let i = 0; i + phrase.length <= words.length; i++) if (phrase.every((w, k) => words[i + k] === w)) n++;
   return n;
 }
+export const countAgain = (words) => countPhrase(words, COMMANDS.again);
 
 // ---------- mikrofon + ElevenLabs ----------
 
@@ -96,11 +100,12 @@ const b64 = (bytes) => {
 };
 
 export class Voice {
-  constructor({ onStatus, onWords, onCommand }) {
+  constructor({ onStatus, onWords, onCommand, onCommitted }) {
     this.onStatus = onStatus;   // ('connecting'|'listening'|'error'|'off', komunikat?)
     this.onWords = onWords;     // (lista ostatnio wypowiedzianych słów, tekst do podglądu)
-    this.onCommand = onCommand; // ('again') — padło „jeszcze raz”
-    this.cmdSeen = 0;           // ile komend już obsłużono w bieżącej wypowiedzi (częściowe wyniki się powtarzają)
+    this.onCommand = onCommand; // ('again' | 'restart') — padło „jeszcze raz” / „skrypt od nowa”
+    this.onCommitted = onCommitted; // (tekst) — zatwierdzona wypowiedź, do dziennika nagrania
+    this.cmdSeen = {};          // ile komend już obsłużono w bieżącej wypowiedzi (częściowe wyniki się powtarzają)
     this.committed = [];
     this.partial = [];
     this.lastSpeech = 0;
@@ -114,7 +119,7 @@ export class Voice {
     this.apiKey = apiKey;
     this.committed = [];
     this.partial = [];
-    this.cmdSeen = 0;
+    this.cmdSeen = {};
     this.queue = [];
     this.queued = 0;
     this.onStatus('connecting');
@@ -167,12 +172,13 @@ export class Voice {
       const w = splitWords(m.text || '');
       if (w.length !== this.partial.length || w[w.length - 1] !== this.partial[this.partial.length - 1]) this.lastSpeech = performance.now();
       this.partial = w;
-      this.command(countAgain(w));
+      this.commands(w);
       this.emit(m.text);
     } else if (t === 'committed_transcript') {
       const w = splitWords(m.text || '');
-      this.command(countAgain(w));
-      this.cmdSeen = 0; // następna wypowiedź liczy od zera
+      this.commands(w);
+      this.cmdSeen = {}; // następna wypowiedź liczy od zera
+      if (m.text) this.onCommitted?.(m.text);
       this.committed = this.committed.concat(w).slice(-20);
       this.partial = [];
       this.emit(m.text);
@@ -182,8 +188,11 @@ export class Voice {
     }
   }
 
-  command(n) {
-    if (n > this.cmdSeen) { this.cmdSeen = n; this.onCommand?.('again'); }
+  commands(words) {
+    for (const [name, phrase] of Object.entries(COMMANDS)) {
+      const n = countPhrase(words, phrase);
+      if (n > (this.cmdSeen[name] || 0)) { this.cmdSeen[name] = n; this.onCommand?.(name); }
+    }
   }
 
   emit(text) {

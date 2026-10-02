@@ -130,9 +130,24 @@ const ICON = {
 
 // ---------- biblioteka ----------
 
+// statusy skryptu: kolejka pracy (nagranie → montaż); „nagrany” ustawia się sam po przeczytaniu do końca
+const STATUSES = [['roboczy', 'Do dopracowania'], ['gotowy', 'Gotowy'], ['nagrany', 'Nagrany'], ['zmontowany', 'Zmontowany']];
+const statusOf = (s) => (STATUSES.some(([k]) => k === s.status) ? s.status : 'roboczy');
+const statusLabel = (k) => STATUSES.find(([x]) => x === k)[1];
+let filter = store.get('tp.filter', 'all');
+
+function renderFilters() {
+  const counts = {};
+  for (const s of live()) counts[statusOf(s)] = (counts[statusOf(s)] || 0) + 1;
+  $('#filters').innerHTML = [['all', 'Wszystkie', live().length], ...STATUSES.map(([k, l]) => [k, l, counts[k] || 0])]
+    .map(([k, l, n]) => `<button data-f="${k}" class="${filter === k ? 'on' : ''}">${l} <small>${n}</small></button>`).join('');
+}
+
 function renderLibrary() {
   const q = $('#q').value.trim().toLowerCase();
+  renderFilters();
   const list = live()
+    .filter((s) => filter === 'all' || statusOf(s) === filter)
     .filter((s) => !q || (s.title + ' ' + s.text).toLowerCase().includes(q))
     .sort((a, b) => (b.used || b.updated) - (a.used || a.updated));
   const grid = $('#grid');
@@ -147,7 +162,8 @@ function renderLibrary() {
     return `<div class="card" data-id="${s.id}" role="button">
       <div class="acts"><button data-act="edit" aria-label="Edytuj">${ICON.edit}</button><button data-act="del" aria-label="Usuń">${ICON.del}</button></div>
       <h3>${esc(s.title)}</h3><p>${preview}</p>
-      <div class="meta"><span>${words} słów</span><span>~${fmtTime(dur)}</span></div>
+      <div class="meta"><span>${words} słów</span><span>~${fmtTime(dur)}</span>
+        <button class="st st-${statusOf(s)}" data-act="status" aria-label="Zmień status">${statusLabel(statusOf(s))}</button></div>
     </div>`;
   }).join('') || '<div class="empty">Nic nie pasuje do wyszukiwania.</div>';
 }
@@ -157,6 +173,14 @@ $('#grid').addEventListener('click', (e) => {
   if (!card) return;
   const s = scripts.find((x) => x.id === card.dataset.id);
   const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'status') {
+    const i = STATUSES.findIndex(([k]) => k === statusOf(s));
+    s.status = STATUSES[(i + 1) % STATUSES.length][0];
+    s.updated = Date.now();
+    persist();
+    renderLibrary();
+    return;
+  }
   if (act === 'edit') openEditor(s);
   else if (act === 'del') {
     if (confirm(`Usunąć skrypt „${s.title}”?`)) {
@@ -168,6 +192,13 @@ $('#grid').addEventListener('click', (e) => {
   } else openPrompter(s);
 });
 $('#q').addEventListener('input', renderLibrary);
+$('#filters').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-f]');
+  if (!b) return;
+  filter = b.dataset.f;
+  store.set('tp.filter', filter);
+  renderLibrary();
+});
 
 $('#btn-new').onclick = () => openEditor(null);
 $('#btn-import').onclick = () => { $('#file').dataset.mode = 'import'; $('#file').click(); };
@@ -296,6 +327,7 @@ function openPrompter(s) {
 
 function closePrompter() {
   stop();
+  recFinish();
   closeSettings();
   wakeLock(false);
   renderLibrary();
@@ -365,6 +397,7 @@ function tick(ts) {
   } else if (playing) {
     const dt = lastTs ? Math.min(0.1, (ts - lastTs) / 1000) : 0;
     if (!dragging) offset += velocity(dt) * dt;
+    if (rec && paraAt(readingPos()) !== rec.lastPara) recEvent('para');
     if (offset >= maxOffset) {
       offset = maxOffset;
       draw();
@@ -400,6 +433,7 @@ function start() {
 function begin() {
   playing = true;
   vCur = pxPerSec();
+  recBegin();
   tween = null;
   setPlayIcon();
   kick();
@@ -407,8 +441,10 @@ function begin() {
 
 function stop(ended = false) {
   if (counting) { clearInterval(counting); counting = null; $('#countdown').classList.remove('on'); }
+  const wasPlaying = playing;
   playing = false;
   voice.stop();
+  if (wasPlaying) recPause(ended);
   setPlayIcon();
   showChrome(true);
   if (ended) $('#endmsg').classList.add('on');
@@ -422,6 +458,7 @@ function jumpTo(target) {
   target = clamp(target, 0, maxOffset);
   $('#endmsg').classList.remove('on');
   syncVoice(target);
+  if (rec) recEvent('jump', { to: paraAt(target) });
   if (playing) { offset = target; draw(); return; }
   tween = { from: offset, to: target, t0: performance.now() };
   kick();
@@ -616,7 +653,7 @@ if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
   document.addEventListener('fullscreenchange', onFs);
   document.addEventListener('webkitfullscreenchange', onFs);
 }
-$('#p-edit').onclick = () => { stop(); closeSettings(); wakeLock(false); openEditor(cur); };
+$('#p-edit').onclick = () => { stop(); recFinish(); closeSettings(); wakeLock(false); openEditor(cur); };
 $('#p-play').onclick = toggle;
 $('#p-restart').onclick = () => { stop(); jumpTo(0); };
 $('#p-prev').onclick = () => jumpPara(-1);
@@ -646,6 +683,7 @@ document.addEventListener('keydown', (e) => {
   else if (k === 'ArrowLeft' || k === 'PageUp') jumpPara(-1);
   else if (k === 'ArrowRight' || k === 'PageDown') jumpPara(1);
   else if (k === 'r' || k === 'R' || k === 'Backspace') againParagraph(false);
+  else if (k === 'Home') restartScript(false);
   else if (k === 'Escape') closePrompter();
   else return;
   e.preventDefault();
@@ -706,27 +744,132 @@ const voice = new Voice({
     voiceTarget = wordY[j];
     voiceTs = performance.now();
   },
-  onCommand() {
-    if (settings.voiceAgain && playing) againParagraph(true);
+  onCommand(name) {
+    if (!settings.voiceAgain || !playing) return;
+    if (name === 'again') againParagraph(true);
+    else if (name === 'restart') restartScript(true);
+  },
+  onCommitted(text) {
+    if (rec && (playing || counting)) rec.transcript.push({ t: Math.round(performance.now() - rec.t0), text });
   },
 });
 
-// „jeszcze raz”: powrót do początku bieżącego akapitu; tekst czeka, aż zaczniesz go czytać od nowa
-function againParagraph(byVoice) {
-  if (byVoice) {
-    // fraza zapisana w samym skrypcie, w miejscu czytania, to nie komenda
-    for (let k = Math.max(0, voiceCur - 4); k < Math.min(wordNorms.length - 1, voiceCur + 15); k++) {
-      if (wordNorms[k] === 'jeszcze' && wordNorms[k + 1] === 'raz') return;
-    }
+// fraza komendy zapisana w samym skrypcie, w miejscu czytania, to nie komenda
+function phraseNear(phrase) {
+  for (let k = Math.max(0, voiceCur - 4); k < Math.min(wordNorms.length - phrase.length + 1, voiceCur + 15); k++) {
+    if (phrase.every((w, i) => wordNorms[k + i] === w)) return true;
   }
-  const pos = voiceTs ? voiceTarget : offset; // miejsce, w którym mówisz (gdy głos je zna), a nie to na wskaźniku
-  const tops = paraTops.filter((t) => t <= pos + lhPx * 0.3);
-  jumpTo(tops.length ? tops[tops.length - 1] : 0);
-  holdTs = performance.now();
+  return false;
+}
+
+function flashCommand(text) {
   const f = $('#cmdflash');
+  f.textContent = text;
   f.classList.remove('on');
   void f.offsetWidth; // restart animacji
   f.classList.add('on');
+}
+
+// „skrypt od nowa”: powrót na sam początek; tekst czeka, aż zaczniesz czytać
+function restartScript(byVoice) {
+  if (byVoice && phraseNear(['skrypt', 'od', 'nowa'])) return;
+  if (rec) recEvent('restart');
+  jumpTo(0);
+  holdTs = performance.now();
+  flashCommand('⤒ skrypt od nowa');
+}
+
+// „jeszcze raz”: powrót do początku bieżącego akapitu; tekst czeka, aż zaczniesz go czytać od nowa
+function againParagraph(byVoice) {
+  if (byVoice && phraseNear(['jeszcze', 'raz'])) return;
+  if (rec) recEvent('again');
+  jumpTo(paraTops[paraAt(readingPos())] ?? 0);
+  holdTs = performance.now();
+  flashCommand('↺ jeszcze raz');
+}
+
+// miejsce, w którym mówisz (gdy głos je zna), a nie to na wskaźniku
+const readingPos = () => (voiceTs ? voiceTarget : offset);
+function paraAt(pos) {
+  let i = 0;
+  paraTops.forEach((t, k) => { if (t <= pos + lhPx * 0.3) i = k; });
+  return i;
+}
+
+// ---------- dziennik nagrania ----------
+// Co działo się w trakcie czytania: akapity z czasami, „jeszcze raz”, przeskoki i rozpoznany tekst.
+// Trafia do prompter-dane/nagrania/… — montaż (af) dopasowuje go do materiału z kamery i wybiera właściwe duble.
+
+let rec = null;
+const REC_QUEUE = 'tp.recQueue', REC_DRAFT = 'tp.recDraft';
+
+function deviceName() {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) return 'iPhone';
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
+  return /Macintosh/.test(ua) ? 'Mac' : 'inne';
+}
+
+function recEvent(type, extra) {
+  const para = paraAt(readingPos());
+  rec.events.push({ t: Math.round(performance.now() - rec.t0), type, para, ...extra });
+  rec.lastPara = para;
+}
+
+function recBegin() {
+  if (rec && rec.scriptId !== cur.id) recFinish();
+  if (!rec) {
+    rec = {
+      app: 'prompter', version: 1, id: newId(), scriptId: cur.id, scriptTitle: cur.title, scriptUpdated: cur.updated,
+      scriptText: cur.text, device: deviceName(), startedAt: new Date().toISOString(), t0: performance.now(),
+      paragraphs: [...content.children].map((el) => el.textContent.replace(/\s+/g, ' ').trim()),
+      events: [], transcript: [], playMs: 0, voice: false, reachedEnd: false, lastPara: -1,
+    };
+  }
+  rec.playFrom = performance.now();
+  rec.voice = rec.voice || voice.active;
+  recEvent('play');
+}
+
+function recPause(ended) {
+  if (!rec) return;
+  if (rec.playFrom) rec.playMs += performance.now() - rec.playFrom;
+  rec.playFrom = 0;
+  recEvent(ended ? 'end' : 'pause');
+  if (ended) rec.reachedEnd = true;
+  store.set(REC_DRAFT, rec); // gdyby aplikacja została zamknięta w tle
+}
+
+// koniec sesji: zapis do kolejki (wysyłka przy synchronizacji); przeczytany do końca → status „nagrany”
+function recFinish(draft) {
+  const r = draft || rec;
+  if (!draft) rec = null;
+  try { localStorage.removeItem(REC_DRAFT); } catch { /* nic */ }
+  if (!r || r.playMs < 5000) return;
+  const { t0, lastPara, playFrom, ...out } = r;
+  out.endedAt = new Date().toISOString();
+  out.playMs = Math.round(out.playMs);
+  const queue = store.get(REC_QUEUE, []);
+  queue.push(out);
+  store.set(REC_QUEUE, queue.slice(-50));
+  const s = scripts.find((x) => x.id === out.scriptId);
+  if (s && out.reachedEnd && ['roboczy', 'gotowy'].includes(statusOf(s))) {
+    Object.assign(s, { status: 'nagrany', recordedAt: out.startedAt, updated: Date.now() });
+    persist();
+  }
+  scheduleSync(800);
+}
+
+const slug = (t) => t.toLowerCase().replace(/ł/g, 'l').normalize('NFD').replace(/\p{M}/gu, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+
+async function flushRecordings(repo, token) {
+  for (const r of store.get(REC_QUEUE, [])) {
+    const path = `nagrania/${r.startedAt.slice(0, 10)}/${r.startedAt.slice(11, 19).replace(/:/g, '')}_${slug(r.scriptTitle)}_${r.id}.json`;
+    try { await pushJson(repo, token, path, r, null, `Prompter: nagranie „${r.scriptTitle}”`); }
+    catch (e) { if (!e.conflict) throw e; } // plik już jest (wysłany wcześniej)
+    store.set(REC_QUEUE, store.get(REC_QUEUE, []).filter((x) => x.id !== r.id));
+  }
 }
 
 // pozycja każdego słowa: offset, przy którym linia z tym słowem stoi na wskaźniku
@@ -972,6 +1115,7 @@ async function syncNow() {
         catch (e) { if (e.conflict && attempt < 3) continue; throw e; }
       }
       await syncKey(cfg.repo || SYNC_REPO, cfg.token);
+      await flushRecordings(cfg.repo || SYNC_REPO, cfg.token);
       syncedHash = JSON.stringify(forRemote(scripts));
       store.set('tp.scripts', scripts);
       syncAt = Date.now();
@@ -1020,6 +1164,9 @@ for (const btn of $$('.info')) {
     btn.classList.toggle('on', $('#' + btn.dataset.help).classList.toggle('open'));
   });
 }
+
+const leftover = store.get(REC_DRAFT, null);
+if (leftover) recFinish(leftover);
 
 bindSettings();
 renderLibrary();

@@ -8,10 +8,13 @@
 //   node narzedzia/skrypt.mjs tytul  <id albo fragment tytułu> "<nowy tytuł>"
 //   node narzedzia/skrypt.mjs dodaj  "<tytuł>" <plik.txt>
 //   node narzedzia/skrypt.mjs usun   <id albo fragment tytułu>
+//   node narzedzia/skrypt.mjs status <id albo fragment tytułu> <roboczy|gotowy|nagrany|zmontowany>
+//   node narzedzia/skrypt.mjs nagrania [fragment tytułu]          (dzienniki nagrań z Promptera)
+//   node narzedzia/skrypt.mjs nagranie <ścieżka z listy>            (cały dziennik jako JSON)
 
 import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
-import { pull, push } from '../sync.js';
+import { pull, push, pullJson } from '../sync.js';
 import { normalize } from '../parsers.js';
 
 const REPO = process.env.PROMPTER_REPO || 'krolikowskiwojciech-dotcom/prompter-dane';
@@ -43,6 +46,20 @@ async function edit(change) {
 }
 
 const now = () => Date.now();
+const STATUSY = ['roboczy', 'gotowy', 'nagrany', 'zmontowany'];
+
+// dzienniki nagrań: prompter-dane/nagrania/<RRRR-MM-DD>/<HHMMSS UTC>_<tytuł>_<id>.json
+async function listRecordings() {
+  const ghJson = (path) => fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+  }).then((r) => (r.status === 404 ? [] : r.json()));
+  const out = [];
+  for (const day of await ghJson('nagrania')) {
+    if (day.type !== 'dir') continue;
+    for (const f of await ghJson(day.path)) if (f.name.endsWith('.json')) out.push(f.path);
+  }
+  return out.sort().reverse();
+}
 
 try {
   if (cmd === 'lista' || !cmd) {
@@ -73,8 +90,19 @@ try {
       Object.assign(s, { deleted: true, updated: now() });
       return `Usunięto: ${title}`;
     }));
+  } else if (cmd === 'status') {
+    if (!STATUSY.includes(b)) throw new Error(`Status: ${STATUSY.join(' | ')}`);
+    console.log(await edit((list) => { const s = find(list, a); Object.assign(s, { status: b, updated: now() }); return `Status: ${s.title} → ${b}`; }));
+  } else if (cmd === 'nagrania') {
+    const paths = await listRecordings();
+    const hits = a ? paths.filter((p) => fold(p).includes(fold(a).replace(/\s+/g, '-'))) : paths;
+    console.log(hits.join('\n') || 'Brak nagrań.');
+  } else if (cmd === 'nagranie') {
+    const { data } = await pullJson(REPO, token, a);
+    if (!data) throw new Error(`Nie ma dziennika ${a}`);
+    console.log(JSON.stringify(data, null, 1));
   } else {
-    console.log('Komendy: lista | pokaz <skrypt> | zapisz <skrypt> <plik> | tytul <skrypt> "<tytuł>" | dodaj "<tytuł>" <plik> | usun <skrypt>');
+    console.log('Komendy: lista | pokaz <skrypt> | zapisz <skrypt> <plik> | tytul <skrypt> "<tytuł>" | dodaj "<tytuł>" <plik> | usun <skrypt> | status <skrypt> <status> | nagrania [tytuł] | nagranie <ścieżka>');
   }
 } catch (e) {
   console.error(e.message);
