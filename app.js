@@ -1003,6 +1003,15 @@ $('#sync-off').onclick = () => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleSync(); });
 setInterval(() => { if (document.visibilityState === 'visible' && !playing && !counting) syncNow(); }, 60000);
 
+// ikonka ⓘ pokazuje/chowa objaśnienie (w etykiecie przełącznika nie może go przełączać)
+for (const btn of $$('.info')) {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    btn.classList.toggle('on', $('#' + btn.dataset.help).classList.toggle('open'));
+  });
+}
+
 bindSettings();
 renderLibrary();
 scheduleSync();

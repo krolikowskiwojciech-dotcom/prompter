@@ -79,6 +79,18 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 #syncbox input { display: block; width: 100%; margin-top: 6px; height: 46px; border: 0; border-radius: 12px; background: #111116; padding: 0 14px; font-size: 16px; outline: none; -webkit-user-select: text; user-select: text; }
 .sync-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 #sync-msg { margin-top: 10px; font-size: 14px; color: #ff8a8d; }
+/* objaśnienia schowane pod ikoną ⓘ */
+.help { display: none; }
+.help.open { display: block; }
+.info { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--muted); color: var(--muted); font: italic 700 13px Georgia, serif; margin-left: 6px; vertical-align: middle; flex: none; }
+.info.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+#btn-import + .info { margin-left: -2px; }
+.lt { display: inline-flex; align-items: center; }
+.lib-only { display: none; }
+#settings.lib .lib-only:not(.help), #settings.lib .help.lib-only.open { display: inline; }
+#settings.lib p.help.lib-only.open { display: block; color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+#settings:not(.lib) .lib-only { display: none !important; }
+.backup-btns { display: flex; flex-direction: column; gap: 8px; }
 .lib-foot { margin-top: 36px; display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ---------- Edytor ---------- */
@@ -152,8 +164,6 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 #settings { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); background: rgba(20,20,26,.97); z-index: 10; transform: translateX(105%); transition: transform .28s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 22px calc(var(--safe-b) + 30px); border-left: 1px solid var(--line); }
 #settings.on { transform: none; }
 #settings.lib #tempo-row { display: none; }
-#settings .lib-note { display: none; color: var(--muted); font-size: 13px; margin: 4px 0 0; }
-#settings.lib .lib-note { display: block; }
 /* nagłówek z „Gotowe” przypięty u góry podczas przewijania */
 .s-head { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; margin: 0 -22px 8px; padding: calc(var(--safe-t) + 16px) 22px 12px; background: rgb(20,20,26); border-bottom: 1px solid var(--line); }
 .s-head h2 { margin: 0; font-size: 24px; font-weight: 800; }
@@ -219,6 +229,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
   <div class="lib-head">
     <h1>Skrypty</h1>
     <button class="btn" id="btn-import"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importuj</button>
+    <button type="button" class="info" data-help="h-import" aria-label="Wyjaśnienie">i</button>
     <button class="btn icon" id="btn-settings" aria-label="Ustawienia"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
     <button class="btn primary" id="btn-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nowy</button>
   </div>
@@ -226,21 +237,17 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input id="q" type="search" placeholder="Szukaj" autocomplete="off">
   </div>
-  <div class="hint">Import: TXT, RTF, Word, PDF, Pages. Możesz wybrać kilka plików naraz z iCloud.</div>
+  <div class="hint help" id="h-import">Import: TXT, RTF, Word, PDF, Pages. Możesz wybrać kilka plików naraz z iCloud.</div>
   <button id="btn-sync"><span id="sync-state" class="sync-state off"><i></i><span>Synchronizacja wyłączona</span></span></button>
   <div id="syncbox" hidden>
-    <h3>Synchronizacja między urządzeniami</h3>
-    <p>Skrypty i ich tempo zapisują się w Twoim prywatnym repozytorium GitHub, więc to, co zaimportujesz na telefonie, pojawi się na iPadzie. Na każdym urządzeniu wpisz ten sam token. Synchronizuje się też klucz ElevenLabs. Ustawienia wyglądu zostają osobno na każdym urządzeniu.</p>
+    <h3>Synchronizacja między urządzeniami <button type="button" class="info" data-help="h-sync" aria-label="Wyjaśnienie">i</button></h3>
+    <p class="help" id="h-sync">Skrypty i ich tempo zapisują się w Twoim prywatnym repozytorium GitHub, więc to, co zaimportujesz na telefonie, pojawi się na iPadzie. Na każdym urządzeniu wpisz ten sam token. Synchronizuje się też klucz ElevenLabs. Ustawienia wyglądu zostają osobno na każdym urządzeniu.</p>
     <label>Repozytorium<input id="sync-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <label>Token GitHub<input id="sync-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <div class="sync-btns"><button class="btn primary" id="sync-save">Zapisz i synchronizuj</button><button class="btn ghost" id="sync-off">Wyłącz</button></div>
     <div id="sync-msg"></div>
   </div>
   <div class="grid" id="grid"></div>
-  <div class="lib-foot">
-    <button class="btn ghost" id="btn-backup"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3m0 12-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Kopia zapasowa</button>
-    <button class="btn ghost" id="btn-restore"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg>Przywróć z kopii</button>
-  </div>
   <input type="file" id="file" multiple>
 </section>
 
@@ -302,9 +309,9 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
 
   <aside id="settings">
     <div class="s-head"><h2>Ustawienia</h2><button class="pill" id="s-close">Gotowe</button></div>
-    <p class="lib-note">Tempo ustawiasz w skrypcie — zapamiętuje się osobno dla każdego z nich.</p>
 
-    <div class="grp"><h4>Przewijanie</h4>
+    <div class="grp"><h4>Przewijanie <span class="lib-only"><button type="button" class="info" data-help="h-tempo" aria-label="Wyjaśnienie">i</button></span></h4>
+      <p class="help lib-only" id="h-tempo">Tempo ustawiasz w skrypcie — zapamiętuje się osobno dla każdego z nich.</p>
       <div class="row" id="tempo-row">
         <div class="lbl"><span>Tryb</span></div>
         <div class="seg" data-key="mode">
@@ -326,15 +333,15 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     </div>
 
     <div class="grp"><h4>Śledzenie głosu (ElevenLabs)</h4>
-      <div class="row"><label>Tekst podąża za głosem <span class="tog"><input type="checkbox" data-key="voice"><i></i></span></label>
-        <div class="est">Tekst płynie w ustawionym tempie, a głos je koryguje: dogania Cię, gdy mówisz szybciej, i czeka, gdy robisz pauzę. Gdy rozpoznawanie się zgubi, tekst płynie dalej.</div></div>
+      <div class="row"><label><span class="lt">Tekst podąża za głosem <button type="button" class="info" data-help="h-voice" aria-label="Wyjaśnienie">i</button></span><span class="tog"><input type="checkbox" data-key="voice"><i></i></span></label>
+        <div class="est help" id="h-voice">Tekst płynie w ustawionym tempie, a głos je koryguje: dogania Cię, gdy mówisz szybciej, i czeka, gdy robisz pauzę. Gdy rozpoznawanie się zgubi, tekst płynie dalej.</div></div>
       <div class="row">
-        <div class="lbl"><span>Klucz API ElevenLabs</span><span id="el-status"></span></div>
+        <div class="lbl"><span>Klucz API ElevenLabs <button type="button" class="info" data-help="h-key" aria-label="Wyjaśnienie">i</button></span><span id="el-status"></span></div>
         <div class="keyrow"><input id="el-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="pill" id="el-save">Zapisz</button></div>
-        <div class="est">Przy włączonej synchronizacji klucz trafia do Twojego prywatnego repozytorium i sam pojawia się na pozostałych urządzeniach. Nie trafia do kopii zapasowej. Koszt ok. 0,39 USD za godzinę, liczony tylko w trakcie czytania. Mikrofon działa tylko pod adresem https (albo na Macu).</div>
+        <div class="est help" id="h-key">Przy włączonej synchronizacji klucz trafia do Twojego prywatnego repozytorium i sam pojawia się na pozostałych urządzeniach. Nie trafia do kopii zapasowej. Koszt ok. 0,39 USD za godzinę, liczony tylko w trakcie czytania. Mikrofon działa tylko pod adresem https (albo na Macu).</div>
       </div>
-      <div class="row"><label>„Jeszcze raz” cofa do początku akapitu <span class="tog"><input type="checkbox" data-key="voiceAgain"><i></i></span></label>
-        <div class="est">Powiedz „jeszcze raz”, a tekst wróci na początek akapitu i poczeka, aż zaczniesz czytać. Z klawiatury lub pilota: R.</div></div>
+      <div class="row"><label><span class="lt">„Jeszcze raz” cofa do początku akapitu <button type="button" class="info" data-help="h-again" aria-label="Wyjaśnienie">i</button></span><span class="tog"><input type="checkbox" data-key="voiceAgain"><i></i></span></label>
+        <div class="est help" id="h-again">Powiedz „jeszcze raz”, a tekst wróci na początek akapitu i poczeka, aż zaczniesz czytać. Z klawiatury lub pilota: R.</div></div>
       <div class="row"><label>Pokaż rozpoznany tekst <span class="tog"><input type="checkbox" data-key="voiceDebug"><i></i></span></label></div>
     </div>
 
@@ -388,6 +395,13 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
       <div class="row"><label>Przyciemnij przeczytany tekst <span class="tog"><input type="checkbox" data-key="fade"><i></i></span></label></div>
       <div class="row"><label>Pokaż pozostały czas <span class="tog"><input type="checkbox" data-key="hud"><i></i></span></label></div>
       <div class="row"><label>Pasek postępu <span class="tog"><input type="checkbox" data-key="progress"><i></i></span></label></div>
+    </div>
+    <div class="grp"><h4>Kopia zapasowa <button type="button" class="info" data-help="h-backup" aria-label="Wyjaśnienie">i</button></h4>
+      <p class="help" id="h-backup">Na co dzień niepotrzebna — synchronizacja z GitHubem trzyma każdą wersję skryptów. Plik kopii przydaje się, gdy synchronizacja jest wyłączona.</p>
+      <div class="backup-btns">
+        <button class="btn ghost" id="btn-backup"><svg class="i" viewBox="0 0 24 24"><path d="M12 15V3m0 12-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Kopia zapasowa</button>
+    <button class="btn ghost" id="btn-restore"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg>Przywróć z kopii</button>
+      </div>
     </div>
   </aside>
 
