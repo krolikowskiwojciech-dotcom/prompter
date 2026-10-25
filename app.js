@@ -28,6 +28,8 @@ const DEFAULTS = {
   fontSize: innerWidth < 640 ? 32 : 72, font: 'system', weight: '600', lineHeight: 1.35, margin: 8, align: 'left', upper: false,
   fg: '#ffffff', bg: '#000000', mirrorH: false, mirrorV: false,
   marker: true, markerPos: 30, fade: true, hud: true, progress: true, countdown: '3',
+  // celownik obiektywu; lensPos = { land: [x%, y%], port: [x%, y%] } — osobno dla orientacji
+  lens: true, lensSize: '120', lensOpacity: 40, lensPos: {},
   // domyślne tempo dla skryptów, które nie mają jeszcze własnego
   mode: 'speed', speed: 12, wpm: 140,
   voice: false, voiceDebug: true, voiceAgain: true,
@@ -297,7 +299,7 @@ $('#ed-read').onclick = () => { const s = saveEditor(); if (s) openPrompter(s); 
 
 // ---------- prompter ----------
 
-const stage = $('#stage'), content = $('#content');
+const stage = $('#stage'), content = $('#content'), lens = $('#lens');
 let cur = null;           // aktualny skrypt
 let P = null;             // tempo tego skryptu: { mode, speed, wpm, time }
 let words = 0;
@@ -350,6 +352,9 @@ function applySettings() {
   $('#fade').style.display = settings.fade ? '' : 'none';
   $('#hud').style.display = settings.hud ? '' : 'none';
   $('#progress').style.display = settings.progress ? '' : 'none';
+  lens.style.display = settings.lens ? '' : 'none';
+  lens.style.setProperty('--lens-size', settings.lensSize + 'px');
+  lens.style.setProperty('--lens-op', settings.lensOpacity / 100);
   layout();
 }
 
@@ -366,6 +371,7 @@ function layout() {
   offset = frac * maxOffset;
   $('#marker').style.top = markerY + 'px';
   placeMarginBar();
+  placeLens();
   const fade = $('#fade');
   fade.style.height = Math.max(0, markerY - lhPx * 0.5) + 'px';
   fade.style.background = `linear-gradient(${settings.bg}f2, ${settings.bg}00)`;
@@ -452,7 +458,11 @@ function stop(ended = false) {
 
 const toggle = () => (playing || counting ? stop() : start());
 const setPlayIcon = () => $('#p-play-ico').setAttribute('d', playing ? ICON.pause : ICON.play);
-const showChrome = (on) => $$('.chrome').forEach((c) => c.classList.toggle('hidden', !on));
+const showChrome = (on) => {
+  $$('.chrome').forEach((c) => c.classList.toggle('hidden', !on));
+  // podczas czytania celownik zostaje, ale przygaszony i nie łapie dotyku
+  lens.classList.toggle('reading', !on);
+};
 
 function jumpTo(target) {
   target = clamp(target, 0, maxOffset);
@@ -634,6 +644,44 @@ const endMarginDrag = () => {
 };
 marginBar.addEventListener('pointerup', endMarginDrag);
 marginBar.addEventListener('pointercancel', endMarginDrag);
+
+// celownik obiektywu: punkt ekranu, w którym przez szybę widać obiektyw. Układ ekranu, nie tekstu,
+// więc lustro go nie odbija. Obudowa trzyma urządzenie w jednej orientacji — pozycja osobno dla pionu i poziomu.
+const lensKey = () => (innerWidth >= innerHeight ? 'land' : 'port');
+function placeLens() {
+  const [x, y] = settings.lensPos?.[lensKey()] || [50, 50];
+  lens.style.left = x + '%';
+  lens.style.top = y + '%';
+}
+function setLens(x, y) {
+  settings.lensPos = { ...settings.lensPos, [lensKey()]: [x, y] };
+  placeLens();
+}
+let lensDrag = null;
+lens.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  const r = lens.getBoundingClientRect();
+  // chwytamy w dowolnym miejscu — celownik nie przeskakuje środkiem pod palec
+  lensDrag = { id: e.pointerId, dx: e.clientX - (r.left + r.width / 2), dy: e.clientY - (r.top + r.height / 2) };
+  try { lens.setPointerCapture(e.pointerId); } catch { /* wskaźnik już nieaktywny */ }
+  lens.classList.add('drag');
+});
+lens.addEventListener('pointermove', (e) => {
+  if (!lensDrag || e.pointerId !== lensDrag.id) return;
+  const r = $('#prompter').getBoundingClientRect();
+  const x = clamp(((e.clientX - lensDrag.dx - r.left) / r.width) * 100, 0, 100);
+  const y = clamp(((e.clientY - lensDrag.dy - r.top) / r.height) * 100, 0, 100);
+  setLens(Math.round(x * 10) / 10, Math.round(y * 10) / 10);
+});
+const endLensDrag = () => {
+  if (!lensDrag) return;
+  lensDrag = null;
+  lens.classList.remove('drag');
+  persist();
+};
+lens.addEventListener('pointerup', endLensDrag);
+lens.addEventListener('pointercancel', endLensDrag);
+$('#lens-center').onclick = () => { setLens(50, 50); persist(); toast('Celownik na środku ekranu'); };
 
 $('#p-back').onclick = closePrompter;
 
@@ -1008,7 +1056,7 @@ function syncSettingsUI() {
     const v = box.dataset.key === 'mode' ? P?.mode : String(settings[box.dataset.key]);
     $$('button', box).forEach((b) => b.classList.toggle('on', b.dataset.v === v));
   });
-  const outs = { fontSize: settings.fontSize + ' px', lineHeight: (+settings.lineHeight).toFixed(2), margin: settings.margin + '%', markerPos: settings.markerPos + '%' };
+  const outs = { fontSize: settings.fontSize + ' px', lineHeight: (+settings.lineHeight).toFixed(2), margin: settings.margin + '%', markerPos: settings.markerPos + '%', lensOpacity: settings.lensOpacity + '%' };
   $$('output[data-out]', panel).forEach((o) => { o.textContent = outs[o.dataset.out]; });
   if (P) {
     $$('input[type=range][data-play]', panel).forEach((i) => { i.value = P[i.dataset.play]; });
