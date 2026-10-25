@@ -112,6 +112,7 @@ const fmtTime = (sec) => {
 
 function show(id) {
   $$('.view').forEach((v) => v.classList.toggle('on', v.id === id));
+  if (id === 'library') setTimeout(reloadIfIdle, 600);
 }
 
 let toastTimer;
@@ -719,7 +720,7 @@ function openSettings(fromLibrary) {
   panel.classList.add('on');
 }
 $('#s-close').onclick = closeSettings;
-function closeSettings() { $('#settings').classList.remove('on'); }
+function closeSettings() { $('#settings').classList.remove('on'); setTimeout(reloadIfIdle, 600); }
 
 // pilot Bluetooth / klawiatura
 document.addEventListener('keydown', (e) => {
@@ -1220,8 +1221,30 @@ bindSettings();
 renderLibrary();
 scheduleSync();
 
+// aktualizacje: aplikacja z ikony na iPadzie potrafi tygodniami wisieć w tle na starym kodzie.
+// Sprawdzamy nową wersję przy każdym powrocie do aplikacji i co 5 min; gdy jest, przeładowujemy
+// na liście skryptów (nigdy w trakcie czytania ani edycji).
+let updateReady = false;
+function reloadIfIdle() {
+  if (!updateReady || !$('#library').classList.contains('on') || $('#settings').classList.contains('on')) return;
+  if (syncBusy) { setTimeout(reloadIfIdle, 2000); return; }
+  clearTimeout(saveTimer);
+  store.set('tp.settings', settings);
+  store.set('tp.scripts', scripts);
+  location.reload();
+}
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  let hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) { hadController = true; return; } // pierwsza instalacja, to nie aktualizacja
+    updateReady = true;
+    reloadIfIdle();
+  });
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    setInterval(check, 5 * 60 * 1000);
+  }).catch(() => {});
 }
 
 // diagnostyka: adres z #debug udostępnia stan śledzenia głosu w konsoli
