@@ -32,7 +32,7 @@ Statusy: `roboczy` (Do dopracowania) → `gotowy` → `nagrany` → `zmontowany`
 Tryb pracy: `pokaz` → zmiana w pliku tymczasowym (scratchpad) → pokaż Wojtkowi, co się zmienia → `zapisz`.
 Usuwanie tylko na wyraźną prośbę. Teksty mówione pisz skillem `active-fizjo-reels` / głosem marki.
 Znaczniki w tekście: pusta linia = akapit, `*wyróżnienie*`, `[notatka — nie czyta]`, `//` pauza, `# Nagłówek`.
-Komendy głosowe „jeszcze raz” (początek akapitu) i „skrypt od nowa” (sam początek) — nie wstawiaj tych fraz do treści skryptu.
+Komendy głosowe „jeszcze raz” (początek akapitu) i „od nowa” / „od początku” / „skrypt od nowa” (sam początek); działają też na końcu tekstu (minuta nasłuchu) — nie wstawiaj tych fraz do treści skryptu.
 Montaż: `af plan <klip> --prompter` (repo ACTIVE_FIZJO_MONTAZ, `lib/duble.js`, `docs/PROMPTER.md`) sprawdza montaż po skrypcie stąd.
 
 ## Zmiany w aplikacji
