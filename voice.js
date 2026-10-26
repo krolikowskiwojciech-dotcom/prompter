@@ -67,15 +67,17 @@ export function locate(spokenTail, script, cur) {
 }
 
 // komendy głosowe: fraza (po normalizacji) → nazwa komendy
-export const COMMANDS = { again: ['jeszcze', 'raz'], restart: ['skrypt', 'od', 'nowa'] };
+// komendy głosowe: wzorce na znormalizowanych słowach złączonych spacją (rozpoznawanie pisze „od nowa” albo „odnowa”)
+export const COMMANDS = {
+  again: /(?:^| )jeszcze ?raz(?= |$)/g,
+  restart: /(?:^| )(?:(?:skrypt|skryp) )?od ?nowa(?= |$)|(?:^| )od poczatku(?= |$)/g,
+};
 
-// ile razy fraza pada w liście słów
-export function countPhrase(words, phrase) {
-  let n = 0;
-  for (let i = 0; i + phrase.length <= words.length; i++) if (phrase.every((w, k) => words[i + k] === w)) n++;
-  return n;
+// ile razy komenda pada w liście słów
+export function countCommand(words, name) {
+  return (words.join(' ').match(COMMANDS[name]) || []).length;
 }
-export const countAgain = (words) => countPhrase(words, COMMANDS.again);
+export const countAgain = (words) => countCommand(words, 'again');
 
 // ---------- mikrofon + ElevenLabs ----------
 
@@ -189,8 +191,8 @@ export class Voice {
   }
 
   commands(words) {
-    for (const [name, phrase] of Object.entries(COMMANDS)) {
-      const n = countPhrase(words, phrase);
+    for (const name of Object.keys(COMMANDS)) {
+      const n = countCommand(words, name);
       if (n > (this.cmdSeen[name] || 0)) { this.cmdSeen[name] = n; this.onCommand?.(name); }
     }
   }

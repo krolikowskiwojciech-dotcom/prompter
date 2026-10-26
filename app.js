@@ -1,5 +1,5 @@
 import { fileToScript } from './parsers.js';
-import { Voice, locate, mintToken, norm } from './voice.js';
+import { Voice, locate, mintToken, norm, COMMANDS } from './voice.js';
 import { pull, push, merge, forRemote, pullJson, pushJson } from './sync.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -305,6 +305,7 @@ let cur = null;           // aktualny skrypt
 let P = null;             // tempo tego skryptu: { mode, speed, wpm, time }
 let words = 0;
 let offset = 0, maxOffset = 0, lhPx = 0, markerY = 0, paraTops = [];
+let atEnd = 0; // kiedy tekst doszedł do końca (przy włączonym głosie czekamy na komendy)
 let playing = false, counting = null, raf = 0, lastTs = 0, dragging = false, tween = null, lastHud = '';
 
 function openPrompter(s) {
@@ -407,10 +408,17 @@ function tick(ts) {
     if (rec && paraAt(readingPos()) !== rec.lastPara) recEvent('para');
     if (offset >= maxOffset) {
       offset = maxOffset;
-      draw();
-      stop(true);
-      return;
-    }
+      if (!voice.active) { $('#endmsg').textContent = 'Koniec'; draw(); stop(true); return; }
+      // koniec tekstu przy włączonym głosie: tekst stoi, ale mikrofon dalej słucha komend
+      // („jeszcze raz”, „od nowa”); po minucie ciszy nasłuch się wyłącza
+      const now = performance.now();
+      if (!atEnd) {
+        atEnd = now;
+        $('#endmsg').textContent = 'Koniec · „jeszcze raz” albo „od nowa”';
+        $('#endmsg').classList.add('on');
+        if (rec) { recEvent('end'); rec.reachedEnd = true; }
+      } else if (now - Math.max(atEnd, voice.lastSpeech) > 60000) { draw(); stop(true); return; }
+    } else if (atEnd) { atEnd = 0; $('#endmsg').classList.remove('on'); }
   }
   lastTs = ts;
   draw();
@@ -450,6 +458,7 @@ function stop(ended = false) {
   if (counting) { clearInterval(counting); counting = null; $('#countdown').classList.remove('on'); }
   const wasPlaying = playing;
   playing = false;
+  atEnd = 0;
   voice.stop();
   if (wasPlaying) recPause(ended);
   setPlayIcon();
@@ -804,11 +813,9 @@ const voice = new Voice({
 });
 
 // fraza komendy zapisana w samym skrypcie, w miejscu czytania, to nie komenda
-function phraseNear(phrase) {
-  for (let k = Math.max(0, voiceCur - 4); k < Math.min(wordNorms.length - phrase.length + 1, voiceCur + 15); k++) {
-    if (phrase.every((w, i) => wordNorms[k + i] === w)) return true;
-  }
-  return false;
+function phraseNear(name) {
+  const near = wordNorms.slice(Math.max(0, voiceCur - 4), voiceCur + 15).join(' ');
+  return (near.match(COMMANDS[name]) || []).length > 0;
 }
 
 function flashCommand(text) {
@@ -821,16 +828,16 @@ function flashCommand(text) {
 
 // „skrypt od nowa”: powrót na sam początek; tekst czeka, aż zaczniesz czytać
 function restartScript(byVoice) {
-  if (byVoice && phraseNear(['skrypt', 'od', 'nowa'])) return;
+  if (byVoice && phraseNear('restart')) return;
   if (rec) recEvent('restart');
   jumpTo(0);
   holdTs = performance.now();
-  flashCommand('⤒ skrypt od nowa');
+  flashCommand('⤒ od nowa');
 }
 
 // „jeszcze raz”: powrót do początku bieżącego akapitu; tekst czeka, aż zaczniesz go czytać od nowa
 function againParagraph(byVoice) {
-  if (byVoice && phraseNear(['jeszcze', 'raz'])) return;
+  if (byVoice && phraseNear('again')) return;
   if (rec) recEvent('again');
   jumpTo(paraTops[paraAt(readingPos())] ?? 0);
   holdTs = performance.now();
@@ -1249,5 +1256,5 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 
 // diagnostyka: adres z #debug udostępnia stan śledzenia głosu w konsoli
 if (location.hash === '#debug') {
-  window.tp = { voice, get words() { return { wordNorms, wordY, voiceCur, voiceTarget, offset, vCur }; }, velocity };
+  window.tp = { voice, get words() { return { wordNorms, wordY, voiceCur, voiceTarget, offset, vCur, maxOffset, atEnd }; }, velocity, tick };
 }
