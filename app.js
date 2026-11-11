@@ -1,3 +1,4 @@
+import { setupCamera } from './camera.js';
 import { fileToScript } from './parsers.js';
 import { Voice, locate, mintToken, norm, COMMANDS } from './voice.js';
 import { pull, push, merge, forRemote, pullJson, pushJson } from './sync.js';
@@ -111,6 +112,7 @@ const fmtTime = (sec) => {
 // ---------- widoki ----------
 
 function show(id) {
+  if (id !== 'prompter') camera.close();
   $$('.view').forEach((v) => v.classList.toggle('on', v.id === id));
   if (id === 'library') setTimeout(reloadIfIdle, 600);
 }
@@ -734,6 +736,7 @@ function closeSettings() { $('#settings').classList.remove('on'); setTimeout(rel
 // pilot Bluetooth / klawiatura
 document.addEventListener('keydown', (e) => {
   if (!$('#prompter').classList.contains('on')) return;
+  if ($('#camera-result').open || e.target.closest('input, textarea, select, button, a')) return;
   const k = e.key;
   if (k === ' ' || k === 'Enter' || k === 'b' || k === '.') toggle();
   else if (k === 'ArrowUp') nudge(1);
@@ -971,7 +974,7 @@ function startVoice() {
   if (!key) { toast('Śledzenie głosu: wpisz klucz ElevenLabs w Ustawieniach'); return; }
   if (!wordY.length) measureWords();
   syncVoice(offset);
-  voice.start(key);
+  voice.start(key, camera.audio());
 }
 
 // Tryb mieszany: stałe tempo + korekta głosem.
@@ -1224,6 +1227,8 @@ for (const btn of $$('.info')) {
 const leftover = store.get(REC_DRAFT, null);
 if (leftover) recFinish(leftover);
 
+const camera = setupCamera({ pause: () => stop(), play: () => start(), notify: toast });
+
 bindSettings();
 renderLibrary();
 scheduleSync();
@@ -1233,6 +1238,7 @@ scheduleSync();
 // na liście skryptów (nigdy w trakcie czytania ani edycji).
 let updateReady = false;
 function reloadIfIdle() {
+  if (camera.busy()) return;
   if (!updateReady || !$('#library').classList.contains('on') || $('#settings').classList.contains('on')) return;
   if (syncBusy) { setTimeout(reloadIfIdle, 2000); return; }
   clearTimeout(saveTimer);

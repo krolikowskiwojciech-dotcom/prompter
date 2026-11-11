@@ -133,6 +133,21 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .ed-foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 14px; gap: 16px; flex-wrap: wrap; }
 .ed-foot code { background: var(--card); padding: 1px 6px; border-radius: 6px; color: var(--text); }
 
+/* ---------- Kamera ---------- */
+#camera-stop[hidden], #camera-panel [hidden], #camera-result [hidden] { display:none !important; }
+#camera-preview { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; }
+#prompter.camera-on #stage { background:rgba(0,0,0,.22); }
+#prompter.camera-on #content { color:white; text-shadow:0 2px 5px #000, 0 0 12px #000; }
+#prompter.camera-on #fade, #prompter.camera-on #lens { display:none !important; }
+#camera-stop { position:absolute; z-index:7; top:calc(var(--safe-t) + 70px); right:16px; background:#a51930; color:white; }
+#camera-panel { position:absolute; z-index:8; top:calc(var(--safe-t) + 65px); left:12px; right:12px; max-width:440px; margin:auto; padding:20px; border-radius:18px; background:#202029; box-shadow:0 8px 35px #000; }
+#camera-panel p, #camera-result p { font-size:14px; line-height:1.5; }
+#camera-panel .btn, #camera-result .btn { margin:5px 0; }
+#camera-result { color:var(--text); background:#202029; border:1px solid var(--line); border-radius:18px; width:min(520px, 94vw); max-height:90dvh; overflow:auto; padding:20px; }
+#camera-result::backdrop { background:rgba(0,0,0,.8); }
+#camera-download { color:var(--text); text-decoration:none; }
+#camera-playback { width:100%; max-height:48dvh; background:#000; }
+button:disabled { opacity:.45; }
 /* ---------- Prompter ---------- */
 #prompter { background: #000; }
 #stage { position: absolute; inset: 0; overflow: hidden; touch-action: none; background: var(--p-bg, #000); }
@@ -308,6 +323,17 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
 
 <!-- Prompter -->
 <section id="prompter" class="view">
+  <video id="camera-preview" autoplay muted playsinline></video>
+  <button id="camera-stop" class="pill" hidden>■ Zakończ nagranie</button>
+  <div id="camera-panel" hidden>
+    <strong>Aparat i nagrywanie</strong>
+    <p>Tekst jest tylko na ekranie. Film zawiera obraz i dźwięk. Podczas nagrywania pozostaw aplikację otwartą i ekran odblokowany.</p>
+    <button class="btn" id="camera-toggle">Włącz aparat</button>
+    <button class="btn" id="camera-flip">Zmień kamerę</button>
+    <button class="btn primary" id="camera-record" disabled>● Nagraj i czytaj</button>
+    <button class="btn" id="camera-last" hidden>Ostatni film</button>
+    <button class="btn ghost" id="camera-close">Gotowe</button>
+  </div>
   <div id="stage">
     <div id="content"></div>
     <div id="fade"></div>
@@ -330,6 +356,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     <div class="title" id="p-title"></div>
     <button class="pill" id="p-full" aria-label="Pełny ekran" hidden><svg class="i" viewBox="0 0 24 24"><path id="p-full-ico" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     <button class="pill" id="p-edit" aria-label="Edytuj"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+    <button class="pill" id="p-camera" aria-label="Aparat i nagrywanie">Aparat</button>
     <button class="pill" id="p-settings"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="txt">Ustawienia</span></button>
   </div>
 
@@ -348,6 +375,15 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
 
 </section>
 
+  <dialog id="camera-result">
+    <h2>Twoje nagranie</h2>
+    <video id="camera-playback" controls playsinline></video>
+    <p id="camera-save-status">Film jest dostępny na tym urządzeniu.</p>
+    <p>Na iPhonie wybierz „Udostępnij”, a następnie „Zapisz wideo” lub „Zachowaj w Plikach”.</p>
+    <button class="btn primary" id="camera-share">Udostępnij / zapisz</button>
+    <a class="btn" id="camera-download">Pobierz film</a>
+    <button class="btn ghost" id="camera-result-close">Wróć do tekstu</button>
+  </dialog>
   <aside id="settings">
     <div class="s-head"><h2>Ustawienia</h2><button class="pill" id="s-close">Gotowe</button></div>
 

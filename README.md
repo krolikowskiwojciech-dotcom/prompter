@@ -24,3 +24,15 @@ Pusta linia = nowy akapit · `*wyróżnienie*` · `[notatka — nie czytasz]` ·
 ## Rozwój
 `python3 -m http.server 8777` w tym katalogu, potem http://localhost:8777 (`#debug` udostępnia stan głosu w konsoli).
 Po zmianie plików podbij `CACHE` w `sw.js`, żeby urządzenia pobrały nową wersję.
+
+
+## Aparat i nagrywanie na telefonie
+Otwórz skrypt → **Aparat** → **Włącz aparat** i zezwól na kamerę oraz mikrofon.
+**Nagraj i czytaj** rozpoczyna nagrywanie i uruchamia tekst z ustawionym odliczaniem.
+Podgląd przedniej kamery jest lustrzany; zapisany film ma oryginalny obraz bez tekstu.
+Przycisk **Zakończ** pozostaje widoczny podczas czytania. Pauza tekstu nie przerywa filmu.
+Po zakończeniu można odtworzyć, pobrać lub udostępnić film (na iPhonie: Zapisz wideo / Zachowaj w Plikach).
+Ostatni film jest przechowywany lokalnie w aplikacji, bez wysyłki do GitHuba. Nowe nagranie zastępuje lokalną kopię po potwierdzeniu.
+Nie jest to archiwum: zapisz ważne nagranie w Zdjęciach/Plikach. Brak miejsca jest sygnalizowany.
+Zablokowanie ekranu lub przejście do innej aplikacji kończy nagranie; podczas nagrywania trzymaj aplikację na ekranie.
+Format jest wybierany według możliwości przeglądarki (preferowany MP4, alternatywnie WebM).

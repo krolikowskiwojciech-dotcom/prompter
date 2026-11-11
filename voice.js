@@ -115,7 +115,7 @@ export class Voice {
   }
 
   // Wywołać w obsłudze stuknięcia (iOS wymaga gestu do mikrofonu i dźwięku).
-  start(apiKey) {
+  start(apiKey, sharedStream = null) {
     if (this.active) return;
     this.active = true;
     this.apiKey = apiKey;
@@ -127,12 +127,12 @@ export class Voice {
     this.onStatus('connecting');
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.ctx.resume?.();
-    this.setup().catch((e) => this.fail(e));
+    this.setup(sharedStream).catch((e) => this.fail(e));
   }
 
-  async setup() {
+  async setup(sharedStream) {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('Mikrofon wymaga adresu https');
-    this.stream = await navigator.mediaDevices.getUserMedia({
+    this.stream = sharedStream ? new MediaStream(sharedStream.getAudioTracks().map(t => t.clone())) : await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
     if (!this.active) return this.release();
