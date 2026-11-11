@@ -5,6 +5,48 @@ export function setupCamera({ pause, play, notify }) {
   let stream = null, recorder = null, busy = false, facing = 'user', chunks = [], file = null, url = null, timer = null, started = 0;
   let pendingSave = false, requestId = 0;
   const active = () => !!recorder && recorder.state !== 'inactive';
+  const formats = {
+    h264: ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2'],
+    hevc: ['video/mp4;codecs=hvc1,mp4a.40.2', 'video/mp4;codecs=hev1,mp4a.40.2'],
+  };
+  const supported = types => types.find(t => window.MediaRecorder?.isTypeSupported(t));
+  const controls = ['resolution', 'fps', 'format', 'quality'];
+  let prefs = {};
+  try { prefs = JSON.parse(localStorage.getItem('tp.camera') || '{}') || {}; } catch {}
+  for (const key of controls) {
+    const el = $('#camera-' + key);
+    if ([...el.options].some(o => o.value === String(prefs[key]))) el.value = prefs[key];
+    el.onchange = () => {
+      try { localStorage.setItem('tp.camera', JSON.stringify(Object.fromEntries(controls.map(k => [k, $('#camera-' + k).value])))); } catch {}
+      if (stream && ['resolution', 'fps'].includes(key)) open();
+      else describe();
+    };
+  }
+  for (const key of ['h264', 'hevc']) {
+    const option = $('#camera-format').querySelector(`[value="${key}"]`);
+    option.disabled = !supported(formats[key]);
+    if (option.disabled) option.textContent += ' · niedostępny';
+  }
+  if ($('#camera-format').selectedOptions[0].disabled) $('#camera-format').value = 'auto';
+  function mime() {
+    const key = $('#camera-format').value;
+    return supported(formats[key] || [...formats.h264, 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm']);
+  }
+  function bitrate() {
+    const actual = stream?.getVideoTracks()[0]?.getSettings() || {};
+    const pixels = (actual.width || 1920) * (actual.height || 1080);
+    const base = pixels > 1920 * 1080 ? 35000000 : pixels > 1280 * 720 ? 12000000 : 6000000;
+    return Math.round(base * Math.max(1, (actual.frameRate || 30) / 30) * ($('#camera-quality').value === 'high' ? 1.5 : 1));
+  }
+  function describe() {
+    const track = stream?.getVideoTracks()[0];
+    if (!track) { $('#camera-actual').textContent = 'Włącz aparat, aby sprawdzić rzeczywiste parametry.'; return; }
+    const a = track.getSettings();
+    const type = mime() || 'format przeglądarki';
+    const label = /hvc1|hev1/.test(type) ? 'HEVC' : /avc1/.test(type) ? 'H.264' : type;
+    $('#camera-actual').textContent = `Aparat: ${a.width || '?'} × ${a.height || '?'} · ${a.frameRate ? Math.round(a.frameRate * 10) / 10 : '?'} kl./s. Zapis: ${label}, docelowo ${Math.round(bitrate() / 1e6)} Mb/s. Parametry filmu mogą się różnić zależnie od wydajności telefonu.`;
+  }
+
   const db = new Promise((resolve, reject) => {
     const req = indexedDB.open('prompter-video', 1);
     req.onupgradeneeded = () => req.result.createObjectStore('recordings');
@@ -40,7 +82,9 @@ export function setupCamera({ pause, play, notify }) {
     $('#camera-toggle').disabled = busy || active();
     $('#camera-flip').disabled = busy || active();
     $('#camera-close').disabled = busy || active();
+    controls.forEach(k => { $('#camera-' + k).disabled = busy || active(); });
     $('#camera-stop').hidden = !active();
+    describe();
     $('#prompter').classList.toggle('camera-on', !!stream);
   }
   function release() {
@@ -55,7 +99,7 @@ export function setupCamera({ pause, play, notify }) {
     const id = ++requestId;
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Aparat wymaga HTTPS i obsługiwanej przeglądarki.');
-      const acquired = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: { echoCancellation: true, noiseSuppression: true } });
+      const acquired = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: Math.round(Number($('#camera-resolution').value) * 16 / 9) }, height: { ideal: Number($('#camera-resolution').value) }, frameRate: { ideal: Number($('#camera-fps').value) } }, audio: { echoCancellation: true, noiseSuppression: true } });
       if (id !== requestId || document.hidden) { acquired.getTracks().forEach(t => t.stop()); return; }
       stream = acquired;
       preview.srcObject = stream;
@@ -80,8 +124,8 @@ export function setupCamera({ pause, play, notify }) {
     if (!window.MediaRecorder) return notify('Ta przeglądarka nie obsługuje nagrywania. Otwórz aplikację w aktualnym Safari.');
     if (file && !confirm('Rozpocząć nowe nagranie? Zastąpi ono poprzedni film przechowywany w aplikacji. Najpierw zapisz poprzedni film w Zdjęciach lub Plikach.')) return;
     try {
-      const mimeType = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t));
-      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      const mimeType = mime();
+      recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), videoBitsPerSecond: bitrate(), audioBitsPerSecond: 128000 });
       chunks = [];
       recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
       recorder.onerror = () => { notify('Nagrywanie zostało przerwane. Spróbuję zachować zebrany fragment.', 6000); finish(); };

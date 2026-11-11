@@ -141,6 +141,10 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 #prompter.camera-on #fade, #prompter.camera-on #lens { display:none !important; }
 #camera-stop { position:absolute; z-index:7; top:calc(var(--safe-t) + 70px); right:16px; background:#a51930; color:white; }
 #camera-panel { position:absolute; z-index:8; top:calc(var(--safe-t) + 65px); left:12px; right:12px; max-width:440px; margin:auto; padding:20px; border-radius:18px; background:#202029; box-shadow:0 8px 35px #000; }
+#camera-panel { max-height:calc(100dvh - var(--safe-t) - 90px); overflow-y:auto; }
+#camera-options label { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:10px 0; font-size:14px; }
+#camera-options select { width:56%; min-width:0; background:#111116; color:white; border:1px solid #555; border-radius:8px; padding:8px; }
+#camera-actual { color:#b9e8c9; }
 #camera-panel p, #camera-result p { font-size:14px; line-height:1.5; }
 #camera-panel .btn, #camera-result .btn { margin:5px 0; }
 #camera-result { color:var(--text); background:#202029; border:1px solid var(--line); border-radius:18px; width:min(520px, 94vw); max-height:90dvh; overflow:auto; padding:20px; }
@@ -330,6 +334,14 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     <p>Tekst jest tylko na ekranie. Film zawiera obraz i dźwięk. Podczas nagrywania pozostaw aplikację otwartą i ekran odblokowany.</p>
     <button class="btn" id="camera-toggle">Włącz aparat</button>
     <button class="btn" id="camera-flip">Zmień kamerę</button>
+    <div id="camera-options">
+      <label>Rozdzielczość <select id="camera-resolution"><option value="720">HD · 720p</option><option value="1080" selected>Full HD · 1080p</option><option value="2160">4K · jeśli dostępne</option></select></label>
+      <label>Klatki na sekundę <select id="camera-fps"><option>24</option><option>25</option><option selected>30</option><option>50</option><option>60</option></select></label>
+      <label>Format filmu <select id="camera-format"><option value="auto">Automatyczny</option><option value="h264">MP4 · H.264</option><option value="hevc">MP4 · HEVC (mniejszy plik)</option></select></label>
+      <label>Jakość zapisu <select id="camera-quality"><option value="standard">Standardowa</option><option value="high" selected>Wysoka · większy plik</option></select></label>
+      <p id="camera-actual" role="status">Włącz aparat, aby sprawdzić rzeczywiste parametry.</p>
+      <p>Wybór określa preferowane parametry. Telefon może udostępnić niższą rozdzielczość lub mniej klatek. ProRes i tryb filmowy Apple nie są dostępne w tej wersji webowej.</p>
+    </div>
     <button class="btn primary" id="camera-record" disabled>● Nagraj i czytaj</button>
     <button class="btn" id="camera-last" hidden>Ostatni film</button>
     <button class="btn ghost" id="camera-close">Gotowe</button>

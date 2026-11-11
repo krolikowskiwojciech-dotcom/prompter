@@ -36,3 +36,10 @@ Ostatni film jest przechowywany lokalnie w aplikacji, bez wysyłki do GitHuba. N
 Nie jest to archiwum: zapisz ważne nagranie w Zdjęciach/Plikach. Brak miejsca jest sygnalizowany.
 Zablokowanie ekranu lub przejście do innej aplikacji kończy nagranie; podczas nagrywania trzymaj aplikację na ekranie.
 Format jest wybierany według możliwości przeglądarki (preferowany MP4, alternatywnie WebM).
+
+W panelu Aparat dostępne są preferencje 720p / 1080p / 4K, 24 / 25 / 30 / 50 / 60 kl./s,
+format automatyczny / MP4 H.264 / MP4 HEVC (tylko gdy przeglądarka deklaruje obsługę) oraz jakość zapisu.
+Preferencje są zapamiętywane na urządzeniu. Zmiana rozdzielczości lub klatek ponownie uruchamia podgląd;
+w trakcie nagrywania ustawienia są zablokowane. Panel pokazuje faktyczne parametry ścieżki kamery
+oraz docelowy bitrate — urządzenie może nie spełnić preferencji, a enkoder może zmienić bitrate i klatkaż.
+ProRes i natywny tryb filmowy Apple nie są dostępne przez używany interfejs webowy.

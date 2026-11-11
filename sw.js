@@ -1,6 +1,6 @@
 // Offline: aplikacja działa bez internetu po pierwszym otwarciu.
 // Własne pliki: najpierw sieć (żeby aktualizacje docierały od razu), w razie braku — pamięć podręczna.
-const CACHE = 'prompter-v18';
+const CACHE = 'prompter-v19';
 const SHELL = ['./', 'index.html', 'app.js', 'camera.js', 'parsers.js', 'voice.js', 'sync.js', 'manifest.webmanifest', 'icon-180.png', 'icon-512.png', 'fonts/Montserrat-Variable.ttf',
   'fonts/OpenDyslexic-Regular.woff2', 'fonts/OpenDyslexic-Bold.woff2', 'fonts/AtkinsonHyperlegible-Regular.ttf',
   'fonts/AtkinsonHyperlegible-Bold.ttf', 'fonts/Lexend-Variable.ttf'];
