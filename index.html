@@ -71,7 +71,10 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .card .acts svg { width: 19px; height: 19px; }
 .empty { margin: 60px auto; text-align: center; color: var(--muted); max-width: 440px; }
 .empty b { color: var(--text); display: block; font-size: 20px; margin-bottom: 8px; }
-#btn-sync { display: inline-flex; margin: 0 0 16px; }
+.sync-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 16px; }
+#btn-sync { display: inline-flex; align-items: center; min-height: 44px; text-align: left; }
+#sync-now { height: 44px; font-size: 14px; padding: 0 14px; }
+#sync-now:disabled { opacity: .55; cursor: default; }
 .sync-state { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
 .sync-state i { width: 9px; height: 9px; border-radius: 50%; background: #555; }
 .sync-state.ok i { background: #3ccf6e; }
@@ -292,7 +295,10 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
     <input id="q" type="search" placeholder="Szukaj" autocomplete="off">
   </div>
   <div class="filters" id="filters"></div>
-  <button id="btn-sync"><span id="sync-state" class="sync-state off"><i></i><span>Synchronizacja wyłączona</span></span></button>
+  <div class="sync-row">
+    <button type="button" class="btn ghost" id="sync-now">Synchronizuj teraz</button>
+    <button type="button" id="btn-sync" aria-controls="syncbox" aria-expanded="false"><span id="sync-state" class="sync-state off" aria-live="polite"><i></i><span>Synchronizacja wyłączona</span></span></button>
+  </div>
   <div id="syncbox" hidden>
     <h3>Synchronizacja między urządzeniami <button type="button" class="info" data-help="h-sync" aria-label="Wyjaśnienie">i</button></h3>
     <p class="help" id="h-sync">Skrypty i ich tempo zapisują się w Twoim prywatnym repozytorium GitHub, więc to, co zaimportujesz na telefonie, pojawi się na iPadzie. Na każdym urządzeniu wpisz ten sam token. Synchronizuje się też klucz ElevenLabs. Ustawienia wyglądu zostają osobno na każdym urządzeniu.</p>

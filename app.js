@@ -1115,6 +1115,7 @@ function scheduleSync(ms = 0) {
 function syncStatus(state, msg) {
   const el = $('#sync-state');
   el.className = 'sync-state ' + state;
+  $('#sync-now').disabled = state === 'busy';
   const time = syncAt ? new Date(syncAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '';
   el.lastElementChild.textContent = {
     off: 'Synchronizacja wyłączona', busy: 'Synchronizuję…', ok: `Zsynchronizowano ${time}`, error: 'Błąd synchronizacji',
@@ -1190,11 +1191,23 @@ async function syncNow() {
   }
 }
 
-$('#btn-sync').onclick = () => {
-  const box = $('#syncbox');
-  box.hidden = !box.hidden;
+function showSyncSettings(open) {
+  $('#syncbox').hidden = !open;
+  $('#btn-sync').setAttribute('aria-expanded', String(open));
+  if (!open) return;
   $('#sync-repo').value = syncCfg()?.repo || SYNC_REPO;
   $('#sync-token').placeholder = syncCfg()?.token ? '•••••••• (zapisany)' : 'github_pat_…';
+}
+
+$('#btn-sync').onclick = () => showSyncSettings($('#syncbox').hidden);
+$('#sync-now').onclick = () => {
+  if (!syncCfg()?.token) {
+    if ($('#syncbox').hidden) showSyncSettings(true);
+    $('#sync-token').focus();
+    return;
+  }
+  clearTimeout(syncTimer);
+  syncNow();
 };
 $('#sync-save').onclick = () => {
   const token = $('#sync-token').value.trim() || syncCfg()?.token;
