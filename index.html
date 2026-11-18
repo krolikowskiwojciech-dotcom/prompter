@@ -73,8 +73,9 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 .empty b { color: var(--text); display: block; font-size: 20px; margin-bottom: 8px; }
 .sync-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 16px; }
 #btn-sync { display: inline-flex; align-items: center; min-height: 44px; text-align: left; }
-#sync-now { height: 44px; font-size: 14px; padding: 0 14px; }
 #sync-now:disabled { opacity: .55; cursor: default; }
+#sync-now:disabled svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .sync-state { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
 .sync-state i { width: 9px; height: 9px; border-radius: 50%; background: #555; }
 .sync-state.ok i { background: #3ccf6e; }
@@ -118,7 +119,7 @@ svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-widt
 /* elementy listy nie mogą się ściskać w kolumnie (pasek filtrów znikał do kreski) */
 #library > * { flex-shrink: 0; }
 /* dolny pasek z kafelkami */
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
   padding: 12px max(16px, var(--safe-x)) calc(var(--safe-b) + 12px); background: rgba(13, 13, 16, 0.92); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
 .tabbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 66px; border-radius: 16px; background: var(--card); font-size: 13px; font-weight: 600; color: var(--text); }
 .tabbar button svg { width: 24px; height: 24px; }
@@ -296,7 +297,6 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
   </div>
   <div class="filters" id="filters"></div>
   <div class="sync-row">
-    <button type="button" class="btn ghost" id="sync-now">Synchronizuj teraz</button>
     <button type="button" id="btn-sync" aria-controls="syncbox" aria-expanded="false"><span id="sync-state" class="sync-state off" aria-live="polite"><i></i><span>Synchronizacja wyłączona</span></span></button>
   </div>
   <div id="syncbox" hidden>
@@ -312,6 +312,7 @@ input[type=range] { width: 100%; margin: 12px 0 2px; accent-color: var(--accent)
   <nav class="tabbar">
     <button id="btn-import"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span>Importuj</span></button>
     <button id="btn-new" class="primary"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Nowy</span></button>
+    <button type="button" id="sync-now"><svg class="i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9"/><path d="M18.5 3v4.2h-4.2M5.5 21v-4.2h4.2"/></svg><span>Synchronizuj</span></button>
     <button id="btn-settings"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Ustawienia</span></button>
   </nav>
 </section>
