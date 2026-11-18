@@ -11,19 +11,34 @@
 //   node narzedzia/skrypt.mjs status <id albo fragment tytułu> <roboczy|gotowy|nagrany|zmontowany>
 //   node narzedzia/skrypt.mjs nagrania [fragment tytułu]          (dzienniki nagrań z Promptera)
 //   node narzedzia/skrypt.mjs nagranie <ścieżka z listy>            (cały dziennik jako JSON)
+//   node narzedzia/skrypt.mjs recenzja <plik.txt albo skrypt>       (sprawdzenie bez zapisu)
+//
+// zapisz/dodaj najpierw robią recenzję (narzedzia/recenzja.mjs); błędy blokują zapis.
+// --bez-recenzji omija ją — tylko na wyraźną prośbę Wojtka.
 
 import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
 import { pull, push, pullJson } from '../sync.js';
 import { normalize } from '../parsers.js';
+import { recenzja, raport } from './recenzja.mjs';
+import { existsSync } from 'fs';
 
 const REPO = process.env.PROMPTER_REPO || 'krolikowskiwojciech-dotcom/prompter-dane';
 const token = process.env.GH_TOKEN || execSync('gh auth token', { encoding: 'utf8' }).trim();
-const [cmd, a, b] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const bezRecenzji = args.includes('--bez-recenzji');
+const [cmd, a, b] = args.filter((x) => x !== '--bez-recenzji');
 
 const fold = (t) => t.toLowerCase().replace(/ł/g, 'l').normalize('NFD').replace(/\p{M}/gu, '');
 const words = (t) => (t.match(/[\p{L}\p{N}]+/gu) || []).length;
 const readText = (file) => normalize(readFileSync(file, 'utf8'));
+// recenzja przed zapisem; błąd = brak zapisu
+function sprawdz(text) {
+  if (bezRecenzji) { console.log('Recenzja pominięta (--bez-recenzji).'); return; }
+  const r = recenzja(text);
+  console.log(raport(r));
+  if (r.bledy.length) throw new Error('Nie zapisano — popraw tekst i spróbuj ponownie.');
+}
 
 function find(list, q) {
   const live = list.filter((s) => !s.deleted);
@@ -73,11 +88,13 @@ try {
     console.log(`# ${s.title}  (id: ${s.id}, ${words(s.text)} słów)\n\n${s.text}`);
   } else if (cmd === 'zapisz') {
     const text = readText(b);
+    sprawdz(text);
     console.log(await edit((list) => { const s = find(list, a); Object.assign(s, { text, updated: now() }); return `Zapisano: ${s.title} (${words(text)} słów)`; }));
   } else if (cmd === 'tytul') {
     console.log(await edit((list) => { const s = find(list, a); const old = s.title; Object.assign(s, { title: b, updated: now() }); return `Tytuł: ${old} → ${b}`; }));
   } else if (cmd === 'dodaj') {
     const text = readText(b);
+    sprawdz(text);
     console.log(await edit((list) => {
       const t = now();
       list.push({ id: t.toString(36) + Math.random().toString(36).slice(2, 6), title: a, text, created: t, updated: t });
@@ -93,6 +110,13 @@ try {
   } else if (cmd === 'status') {
     if (!STATUSY.includes(b)) throw new Error(`Status: ${STATUSY.join(' | ')}`);
     console.log(await edit((list) => { const s = find(list, a); Object.assign(s, { status: b, updated: now() }); return `Status: ${s.title} → ${b}`; }));
+  } else if (cmd === 'recenzja') {
+    let text;
+    if (existsSync(a)) text = readText(a);
+    else { const { list } = await pull(REPO, token); text = find(list, a).text; }
+    const r = recenzja(text);
+    console.log(raport(r));
+    if (r.bledy.length) process.exitCode = 1;
   } else if (cmd === 'nagrania') {
     const paths = await listRecordings();
     const hits = a ? paths.filter((p) => fold(p).includes(fold(a).replace(/\s+/g, '-'))) : paths;
@@ -102,7 +126,7 @@ try {
     if (!data) throw new Error(`Nie ma dziennika ${a}`);
     console.log(JSON.stringify(data, null, 1));
   } else {
-    console.log('Komendy: lista | pokaz <skrypt> | zapisz <skrypt> <plik> | tytul <skrypt> "<tytuł>" | dodaj "<tytuł>" <plik> | usun <skrypt> | status <skrypt> <status> | nagrania [tytuł] | nagranie <ścieżka>');
+    console.log('Komendy: lista | pokaz <skrypt> | zapisz <skrypt> <plik> | tytul <skrypt> "<tytuł>" | dodaj "<tytuł>" <plik> | usun <skrypt> | status <skrypt> <status> | nagrania [tytuł] | nagranie <ścieżka> | recenzja <plik|skrypt>  (--bez-recenzji omija sprawdzenie)');
   }
 } catch (e) {
   console.error(e.message);

@@ -20,7 +20,14 @@ node narzedzia/skrypt.mjs usun <skrypt>
 node narzedzia/skrypt.mjs status <skrypt> <roboczy|gotowy|nagrany|zmontowany>
 node narzedzia/skrypt.mjs nagrania [tytuł]        # dzienniki nagrań
 node narzedzia/skrypt.mjs nagranie <ścieżka>      # jeden dziennik (JSON)
+node narzedzia/skrypt.mjs recenzja <plik|skrypt>  # sprawdzenie bez zapisu
 ```
+
+**Recenzja przed wgraniem (Wojtek 2026-11-18):** `zapisz` i `dodaj` same sprawdzają tekst (`narzedzia/recenzja.mjs`) i NIE zapiszą,
+gdy blok ma więcej niż jedno zdanie, zdanie jest rozbite na kilka linii, ma > 15 słów albo zawiera komendę głosową.
+**Jedno zdanie = jeden blok** (pusta linia między zdaniami), bo „jeszcze raz” cofa do początku bloku i kasuje dobrze nagrane
+zdania. `--bez-recenzji` tylko na wyraźną prośbę Wojtka. Oprócz automatu przeczytaj każde zdanie osobno: czy wiadomo, kto,
+co i czego dotyczy, i czy Wojtek tak mówi.
 
 ## Dziennik nagrania (dla montażu)
 Każda sesja czytania (≥ 5 s) zapisuje `prompter-dane/nagrania/<data>/<HHMMSS UTC>_<tytuł>_<id>.json`:
@@ -31,7 +38,7 @@ Statusy: `roboczy` (Do dopracowania) → `gotowy` → `nagrany` → `zmontowany`
 
 Tryb pracy: `pokaz` → zmiana w pliku tymczasowym (scratchpad) → pokaż Wojtkowi, co się zmienia → `zapisz`.
 
-**Format skryptu do czytania (Wojtek 2026-11-18, obowiązkowo):** krótkie zdania, jedno na linię; bloki po 1–4 linie
+**Format skryptu do czytania (Wojtek 2026-11-18, obowiązkowo):** krótkie zdania, KAŻDE ZDANIE OSOBNYM BLOKIEM (pusta linia); bloki po 1 zdaniu
 oddzielone pustą linią; `*akcent*` 1–2 na blok (liczba, słowo klucz); `//` pauza przed puentą; na początku linii wskazówki intonacji jako notatki (1 na blok): `[wolniej]` ważna liczba/instrukcja,
 `[pytanie]` głos w górę, `[puenta]` głos w dół, pewnie, `[lżej]` luźniej, `[uśmiech]` zakończenie. Żadnych długich akapitów
 ani zdań rozbitych na kilka linii. Zapowiadasz N punktów = wymieniasz wszystkie N po kolei. Precyzja: kość się łamie,
