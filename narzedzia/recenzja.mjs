@@ -1,4 +1,5 @@
-// Recenzja skryptu przed wgraniem do Promptera (zasady Wojtka z 2026-11-18).
+// Recenzja skryptu przed wgraniem do Promptera (zasady Wojtka z 2026-11-18, pełna lista: docs/ZASADY_SKRYPTOW.md).
+// Automat łapie tylko format; ścisłość i zrozumiałość zdań sprawdza agent według tego dokumentu.
 // Błędy blokują zapis; ostrzeżenia tylko się wypisują. Ominięcie: --bez-recenzji (tylko na wyraźną prośbę Wojtka).
 //
 // 1. Jedno zdanie = jeden blok (pusta linia między zdaniami). Komenda „jeszcze raz” cofa do początku bloku,

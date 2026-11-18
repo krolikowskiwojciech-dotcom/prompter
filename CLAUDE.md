@@ -38,14 +38,10 @@ Statusy: `roboczy` (Do dopracowania) → `gotowy` → `nagrany` → `zmontowany`
 
 Tryb pracy: `pokaz` → zmiana w pliku tymczasowym (scratchpad) → pokaż Wojtkowi, co się zmienia → `zapisz`.
 
-**Format skryptu do czytania (Wojtek 2026-11-18, obowiązkowo):** krótkie zdania, KAŻDE ZDANIE OSOBNYM BLOKIEM (pusta linia); bloki po 1 zdaniu
-oddzielone pustą linią; `*akcent*` 1–2 na blok (liczba, słowo klucz); `//` pauza przed puentą; na początku linii wskazówki intonacji jako notatki (1 na blok): `[wolniej]` ważna liczba/instrukcja,
-`[pytanie]` głos w górę, `[puenta]` głos w dół, pewnie, `[lżej]` luźniej, `[uśmiech]` zakończenie. Żadnych długich akapitów
-ani zdań rozbitych na kilka linii. Zapowiadasz N punktów = wymieniasz wszystkie N po kolei. Precyzja: kość się łamie,
-nie skręca; grupa z badania nazwana zgodnie z prawdą (amatorzy ≠ sportowcy); żadnej zachęty do samodiagnozy (objawy urazu
-= „idź do lekarza”, SOR tylko przy alarmach). Gdy Wojtek narzeka na formę, popraw tylko to, co wskazał.
-Pełna lista: `~/Movies/ACTIVE_FIZJO_MONTAZ/docs/LEKCJE.md` (kategoria `skrypt`).
-Usuwanie tylko na wyraźną prośbę. Teksty mówione pisz skillem `active-fizjo-reels` / głosem marki.
+**⛔ Zanim napiszesz albo poprawisz jakikolwiek skrypt: przeczytaj `docs/ZASADY_SKRYPTOW.md`** (styl Wojtka, ścisłość,
+zrozumiałe zdania, bezpieczeństwo widza, format: jedno zdanie = blok, min. 4 słowa, `*akcent*`, `//`, `[wolniej]`…).
+Te zasady wygrywają ze skillem `active-fizjo-reels` (np. on każe pisać akapitami — tu NIE).
+Usuwanie tylko na wyraźną prośbę. Teksty mówione pisz skillem `active-fizjo-reels` / głosem marki, ale według `docs/ZASADY_SKRYPTOW.md`.
 Znaczniki w tekście: pusta linia = akapit, `*wyróżnienie*`, `[notatka — nie czyta]`, `//` pauza, `# Nagłówek`.
 Komendy głosowe „jeszcze raz” (początek akapitu) i „od nowa” / „od początku” / „skrypt od nowa” (sam początek); działają też na końcu tekstu (minuta nasłuchu) — nie wstawiaj tych fraz do treści skryptu.
 Montaż: `af plan <klip> --prompter` (repo ACTIVE_FIZJO_MONTAZ, `lib/duble.js`, `docs/PROMPTER.md`) sprawdza montaż po skrypcie stąd.
