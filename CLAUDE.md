@@ -30,6 +30,13 @@ Przeczytanie do końca ustawia status skryptu „nagrany”. Zegar iPada ≠ zeg
 Statusy: `roboczy` (Do dopracowania) → `gotowy` → `nagrany` → `zmontowany` (ustawia montaż po zakończeniu rolki).
 
 Tryb pracy: `pokaz` → zmiana w pliku tymczasowym (scratchpad) → pokaż Wojtkowi, co się zmienia → `zapisz`.
+
+**Format skryptu do czytania (Wojtek 2026-11-18, obowiązkowo):** krótkie zdania, jedno na linię; bloki po 1–4 linie
+oddzielone pustą linią; `*akcent*` 1–2 na blok (liczba, słowo klucz); `//` pauza przed puentą. Żadnych długich akapitów
+ani zdań rozbitych na kilka linii. Zapowiadasz N punktów = wymieniasz wszystkie N po kolei. Precyzja: kość się łamie,
+nie skręca; grupa z badania nazwana zgodnie z prawdą (amatorzy ≠ sportowcy); żadnej zachęty do samodiagnozy (objawy urazu
+= „idź do lekarza”, SOR tylko przy alarmach). Gdy Wojtek narzeka na formę, popraw tylko to, co wskazał.
+Pełna lista: `~/Movies/ACTIVE_FIZJO_MONTAZ/docs/LEKCJE.md` (kategoria `skrypt`).
 Usuwanie tylko na wyraźną prośbę. Teksty mówione pisz skillem `active-fizjo-reels` / głosem marki.
 Znaczniki w tekście: pusta linia = akapit, `*wyróżnienie*`, `[notatka — nie czyta]`, `//` pauza, `# Nagłówek`.
 Komendy głosowe „jeszcze raz” (początek akapitu) i „od nowa” / „od początku” / „skrypt od nowa” (sam początek); działają też na końcu tekstu (minuta nasłuchu) — nie wstawiaj tych fraz do treści skryptu.
