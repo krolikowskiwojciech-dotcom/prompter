@@ -32,7 +32,8 @@ Statusy: `roboczy` (Do dopracowania) → `gotowy` → `nagrany` → `zmontowany`
 Tryb pracy: `pokaz` → zmiana w pliku tymczasowym (scratchpad) → pokaż Wojtkowi, co się zmienia → `zapisz`.
 
 **Format skryptu do czytania (Wojtek 2026-11-18, obowiązkowo):** krótkie zdania, jedno na linię; bloki po 1–4 linie
-oddzielone pustą linią; `*akcent*` 1–2 na blok (liczba, słowo klucz); `//` pauza przed puentą. Żadnych długich akapitów
+oddzielone pustą linią; `*akcent*` 1–2 na blok (liczba, słowo klucz); `//` pauza przed puentą; na początku linii wskazówki intonacji jako notatki (1 na blok): `[wolniej]` ważna liczba/instrukcja,
+`[pytanie]` głos w górę, `[puenta]` głos w dół, pewnie, `[lżej]` luźniej, `[uśmiech]` zakończenie. Żadnych długich akapitów
 ani zdań rozbitych na kilka linii. Zapowiadasz N punktów = wymieniasz wszystkie N po kolei. Precyzja: kość się łamie,
 nie skręca; grupa z badania nazwana zgodnie z prawdą (amatorzy ≠ sportowcy); żadnej zachęty do samodiagnozy (objawy urazu
 = „idź do lekarza”, SOR tylko przy alarmach). Gdy Wojtek narzeka na formę, popraw tylko to, co wskazał.
